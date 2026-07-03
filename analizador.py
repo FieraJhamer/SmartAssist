@@ -1,37 +1,22 @@
-def analizar_comentario(texto):
+from example import analizar_comentario
 
-    texto = texto.lower()
 
-    if "ingresar" in texto:
+def clasificar(comentario):
+    resultado = analizar_comentario(comentario)
+    return resultado["categoria"], resultado["prioridad"]
 
-        categoria = "ERROR_ACCESO"
-        prioridad = "ALTA"
 
-    elif "lento" in texto or "demora" in texto or "lenta" in texto:
-
-        categoria = "RENDIMIENTO"
-        prioridad = "MEDIA"
-
-    elif "factura" in texto or "cobro" in texto or "pago" in texto or "tarjeta" in texto or "compra" in texto:
-
-        categoria = "FACTURACION"
-        prioridad = "ALTA"
-    
-    elif "dañado" in texto or "equivocado" in texto or "incompleto" in texto or "faltante" in texto or "destruido" in texto:
-        categoria = "DEVOLUCION"  
-        prioridad = "ALTA" 
-    
-    elif "baja" in texto or "liquidar" in texto or "saldar" in texto or "rescindir" in texto:
-        categoria = "CANCELACION"
-        prioridad = "ALTA"
-
-    else:
-
-        categoria = "CONSULTA"
-        prioridad = "BAJA"
-
-    return {
-        "comentario": texto,
-        "categoria": categoria,
-        "prioridad": prioridad
-    }
+if __name__ == "__main__":
+    tests = [
+        "No puedo ingresar al sistema",
+        "La página está lenta",
+        "Necesito un certificado",
+        "Olvidé mi contraseña",
+        "Quiero información sobre cursos",
+        "La factura no coincide",
+        "El producto llegó dañado",
+        "Quiero dar de baja el servicio",
+    ]
+    for t in tests:
+        cat, pri = clasificar(t)
+        print(f"'{t}' -> {cat} / {pri}")
