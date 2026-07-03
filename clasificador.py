@@ -1,7 +1,7 @@
-from example import analizar_comentario
+from motor_clasificacion import analizar_comentario
 
 
-def clasificar(comentario):
+def clasificar_comentario(comentario):
     resultado = analizar_comentario(comentario)
     return resultado["categoria"], resultado["prioridad"]
 
@@ -18,5 +18,5 @@ if __name__ == "__main__":
         "Quiero dar de baja el servicio",
     ]
     for t in tests:
-        cat, pri = clasificar(t)
+        cat, pri = clasificar_comentario(t)
         print(f"'{t}' -> {cat} / {pri}")

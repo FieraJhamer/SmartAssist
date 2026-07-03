@@ -1,11 +1,11 @@
-import db
-import analizador
-import respuestas
+import base_datos
+import clasificador
+import plantillas_respuestas
 from datetime import datetime
 
 
 def mostrar_historial():
-    registros = db.mostrar_historial()
+    registros = base_datos.mostrar_historial()
     if not registros:
         print("No hay registros en el historial.")
         return
@@ -17,8 +17,8 @@ def mostrar_historial():
 
 
 def generar_reporte():
-    total = db.contar_reclamos()
-    categorias = db.contar_por_categoria()
+    total = base_datos.contar_total_reclamos()
+    categorias = base_datos.contar_reclamos_por_categoria()
     ahora = datetime.now()
     print()
     print("==========================")
@@ -38,7 +38,7 @@ def generar_reporte():
     print("==========================")
 
 
-def menu():
+def mostrar_menu():
     print("\n=== SMARTASSIST AI ANALYST ===")
     print("1. Analizar un comentario")
     print("2. Ver historial completo")
@@ -47,15 +47,15 @@ def menu():
     print("5. Eliminar reclamo")
     print("6. Estadísticas")
     print("7. Generar reporte")
-    print("0. Salir \n")
+    print("8. Salir \n")
     return input("Seleccione una opción: ").strip()
 
 
-def main():
-    db.crear_tabla()
+def iniciar():
+    base_datos.crear_tabla()
 
     while True:
-        opcion = menu()
+        opcion = mostrar_menu()
 
         if opcion == "1":
             comentario = input("\nIngrese el comentario: ").strip()
@@ -63,10 +63,10 @@ def main():
                 print("Comentario vacío, intente de nuevo.")
                 continue
 
-            categoria, prioridad = analizador.clasificar(comentario)
-            respuesta = respuestas.generar_respuesta(categoria)
+            categoria, prioridad = clasificador.clasificar_comentario(comentario)
+            respuesta = plantillas_respuestas.generar_respuesta(categoria)
 
-            db.insertar(comentario, categoria, prioridad)
+            base_datos.insertar_reclamo(comentario, categoria, prioridad)
 
             print(f"\n--- Resultado ---")
             print(f"Comentario:  {comentario}")
@@ -80,7 +80,7 @@ def main():
 
         elif opcion == "3":
             categoria = input("\nCategoría (ACCESO, CONSULTA, DOCUMENTACION, OTRO): ").strip().upper()
-            registros = db.obtener_por_categoria(categoria)
+            registros = base_datos.obtener_reclamos_por_categoria(categoria)
             if not registros:
                 print(f"No hay registros en la categoría '{categoria}'.")
                 continue
@@ -96,7 +96,7 @@ def main():
             if not id_editar.isdigit():
                 print("ID inválido.")
                 continue
-            registro = db.obtener_por_id(int(id_editar))
+            registro = base_datos.obtener_reclamo_por_id(int(id_editar))
             if not registro:
                 print("No se encontró un reclamo con ese ID.")
                 continue
@@ -110,7 +110,7 @@ def main():
             nueva_prioridad = input(f"Nueva prioridad (Enter para mantener '{registro[3]}'): ").strip().upper()
             if not nueva_prioridad:
                 nueva_prioridad = registro[3]
-            db.actualizar(int(id_editar), nuevo_comentario, nueva_categoria, nueva_prioridad)
+            base_datos.actualizar_reclamo(int(id_editar), nuevo_comentario, nueva_categoria, nueva_prioridad)
             print("Reclamo actualizado correctamente.")
 
         elif opcion == "5":
@@ -119,21 +119,21 @@ def main():
             if not id_eliminar.isdigit():
                 print("ID inválido.")
                 continue
-            registro = db.obtener_por_id(int(id_eliminar))
+            registro = base_datos.obtener_reclamo_por_id(int(id_eliminar))
             if not registro:
                 print("No se encontró un reclamo con ese ID.")
                 continue
             print(f"Reclamo: {registro[1][:40]} | {registro[2]} | {registro[3]}")
             confirmar = input("¿Eliminar este reclamo? (s/n): ").strip().lower()
             if confirmar == "s":
-                db.eliminar(int(id_eliminar))
+                base_datos.eliminar_reclamo(int(id_eliminar))
                 print("Reclamo eliminado correctamente.")
             else:
                 print("Eliminación cancelada.")
 
         elif opcion == "6":
-            total = db.contar_reclamos()
-            categorias = db.contar_por_categoria()
+            total = base_datos.contar_total_reclamos()
+            categorias = base_datos.contar_reclamos_por_categoria()
             print(f"\n--- Estadísticas ---")
             print(f"Cantidad total: {total}")
             for cat, cant in categorias:
@@ -143,7 +143,7 @@ def main():
         elif opcion == "7":
             generar_reporte()
 
-        elif opcion == "0":
+        elif opcion == "8":
             print("Saliendo de SmartAssist...")
             break
 
@@ -152,4 +152,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    iniciar()

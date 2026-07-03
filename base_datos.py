@@ -1,12 +1,12 @@
 import sqlite3
 import os
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "datos", "reclamos.db")
+RUTA_BASE_DATOS = os.path.join(os.path.dirname(__file__), "datos", "reclamos.db")
 
 
 def conectar():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conexion = sqlite3.connect(DB_PATH)
+    os.makedirs(os.path.dirname(RUTA_BASE_DATOS), exist_ok=True)
+    conexion = sqlite3.connect(RUTA_BASE_DATOS)
     return conexion
 
 
@@ -26,7 +26,7 @@ def crear_tabla():
     print("Base creada correctamente")
 
 
-def insertar(comentario, categoria, prioridad):
+def insertar_reclamo(comentario, categoria, prioridad):
     conexion = conectar()
     cursor = conexion.cursor()
     cursor.execute("""
@@ -37,7 +37,7 @@ def insertar(comentario, categoria, prioridad):
     conexion.close()
 
 
-def obtener_todos():
+def obtener_todos_reclamos():
     conexion = conectar()
     cursor = conexion.cursor()
     cursor.execute("SELECT * FROM historial_reclamos")
@@ -47,18 +47,18 @@ def obtener_todos():
 
 
 def mostrar_historial():
-    return obtener_todos()
+    return obtener_todos_reclamos()
 
 
 def guardar_reclamo(comentario, categoria, prioridad):
-    insertar(comentario, categoria, prioridad)
+    insertar_reclamo(comentario, categoria, prioridad)
 
 
 def crear_base():
     crear_tabla()
 
 
-def obtener_por_id(id):
+def obtener_reclamo_por_id(id):
     conexion = conectar()
     cursor = conexion.cursor()
     cursor.execute("SELECT * FROM historial_reclamos WHERE id = ?", (id,))
@@ -67,7 +67,7 @@ def obtener_por_id(id):
     return registro
 
 
-def actualizar(id, comentario, categoria, prioridad):
+def actualizar_reclamo(id, comentario, categoria, prioridad):
     conexion = conectar()
     cursor = conexion.cursor()
     cursor.execute("""
@@ -79,7 +79,7 @@ def actualizar(id, comentario, categoria, prioridad):
     conexion.close()
 
 
-def eliminar(id):
+def eliminar_reclamo(id):
     conexion = conectar()
     cursor = conexion.cursor()
     cursor.execute("DELETE FROM historial_reclamos WHERE id = ?", (id,))
@@ -87,7 +87,7 @@ def eliminar(id):
     conexion.close()
 
 
-def obtener_por_categoria(categoria):
+def obtener_reclamos_por_categoria(categoria):
     conexion = conectar()
     cursor = conexion.cursor()
     cursor.execute(
@@ -98,7 +98,7 @@ def obtener_por_categoria(categoria):
     return registros
 
 
-def contar_reclamos():
+def contar_total_reclamos():
     conexion = conectar()
     cursor = conexion.cursor()
     cursor.execute("SELECT COUNT(*) FROM historial_reclamos")
@@ -107,7 +107,7 @@ def contar_reclamos():
     return cantidad
 
 
-def contar_por_categoria():
+def contar_reclamos_por_categoria():
     conexion = conectar()
     cursor = conexion.cursor()
     cursor.execute("""
@@ -120,7 +120,7 @@ def contar_por_categoria():
     return datos
 
 
-def buscar_prioridad(prioridad):
+def obtener_reclamos_por_prioridad(prioridad):
     conexion = conectar()
     cursor = conexion.cursor()
     cursor.execute(
