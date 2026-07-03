@@ -16,6 +16,10 @@ def mostrar_historial():
     print()
 
 
+def _obtener_cantidad(par):
+    return par[1]
+
+
 def generar_reporte():
     total = base_datos.contar_total_reclamos()
     categorias = base_datos.contar_reclamos_por_categoria()
@@ -33,7 +37,7 @@ def generar_reporte():
         print("Categorías:")
         for cat, cant in categorias:
             print(f"  {cat} : {cant}")
-        max_cat = max(categorias, key=lambda x: x[1])
+        max_cat = max(categorias, key=_obtener_cantidad)
         print(f"\nCategoría más frecuente: {max_cat[0]} ({max_cat[1]})")
     print("==========================")
 
