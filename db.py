@@ -98,5 +98,38 @@ def obtener_por_categoria(categoria):
     return registros
 
 
+def contar_reclamos():
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("SELECT COUNT(*) FROM historial_reclamos")
+    cantidad = cursor.fetchone()[0]
+    conexion.close()
+    return cantidad
+
+
+def contar_por_categoria():
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT categoria, COUNT(*)
+        FROM historial_reclamos
+        GROUP BY categoria
+    """)
+    datos = cursor.fetchall()
+    conexion.close()
+    return datos
+
+
+def buscar_prioridad(prioridad):
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute(
+        "SELECT * FROM historial_reclamos WHERE prioridad = ?", (prioridad,)
+    )
+    registros = cursor.fetchall()
+    conexion.close()
+    return registros
+
+
 if __name__ == "__main__":
     crear_tabla()

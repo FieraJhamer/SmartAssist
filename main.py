@@ -1,6 +1,7 @@
 import db
 import analizador
 import respuestas
+from datetime import datetime
 
 
 def mostrar_historial():
@@ -15,6 +16,28 @@ def mostrar_historial():
     print()
 
 
+def generar_reporte():
+    total = db.contar_reclamos()
+    categorias = db.contar_por_categoria()
+    ahora = datetime.now()
+    print()
+    print("==========================")
+    print("REPORTE SMARTASSIST")
+    print("==========================")
+    print(f"Fecha: {ahora.strftime('%Y-%m-%d')}")
+    print(f"Hora:  {ahora.strftime('%H:%M:%S')}")
+    print()
+    print(f"Total de reclamos: {total}")
+    print()
+    if categorias:
+        print("Categorías:")
+        for cat, cant in categorias:
+            print(f"  {cat} : {cant}")
+        max_cat = max(categorias, key=lambda x: x[1])
+        print(f"\nCategoría más frecuente: {max_cat[0]} ({max_cat[1]})")
+    print("==========================")
+
+
 def menu():
     print("\n=== SMARTASSIST AI ANALYST ===")
     print("1. Analizar un comentario")
@@ -22,7 +45,9 @@ def menu():
     print("3. Ver por categoría")
     print("4. Editar reclamo")
     print("5. Eliminar reclamo")
-    print("6. Salir \n")
+    print("6. Estadísticas")
+    print("7. Generar reporte")
+    print("0. Salir \n")
     return input("Seleccione una opción: ").strip()
 
 
@@ -107,6 +132,18 @@ def main():
                 print("Eliminación cancelada.")
 
         elif opcion == "6":
+            total = db.contar_reclamos()
+            categorias = db.contar_por_categoria()
+            print(f"\n--- Estadísticas ---")
+            print(f"Cantidad total: {total}")
+            for cat, cant in categorias:
+                print(f"{cat} : {cant}")
+            print("---------------------")
+
+        elif opcion == "7":
+            generar_reporte()
+
+        elif opcion == "0":
             print("Saliendo de SmartAssist...")
             break
 
