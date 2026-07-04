@@ -51,7 +51,7 @@ def mostrar_menu():
     print("5. Eliminar reclamo")
     print("6. Estadísticas")
     print("7. Generar reporte")
-    print("8. Salir \n")
+    print("0. Salir \n")
     return input("Seleccione una opción: ").strip()
 
 
@@ -147,7 +147,7 @@ def iniciar():
         elif opcion == "7":
             generar_reporte()
 
-        elif opcion == "8":
+        elif opcion == "0":
             print("Saliendo de SmartAssist...")
             break
 
