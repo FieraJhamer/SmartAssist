@@ -109,6 +109,7 @@ SmartAssist/
 ├── motor_clasificacion.py    # Motor de clasificación por palabras clave
 ├── plantillas_respuestas.py  # Respuestas automáticas por categoría
 ├── base_datos.py             # Capa de persistencia SQLite (CRUD)
+├── storage_imagenes.py       # Almacenamiento y validación de fotos de reclamos
 ├── ia.py                     # Integración con Ollama (IA local)
 ├── pandas_analisis.py        # Estadísticas con Pandas
 ├── cliente_api.py            # Cliente HTTP para API externa (no integrado)
@@ -116,6 +117,7 @@ SmartAssist/
 ├── docs/                     # Documentación de diseño y especificación
 ├── markdowns/                # Material de las clases del curso
 ├── datos/                    # Base de datos SQLite (se crea sola, no se versiona)
+├── storage/                  # Fotos subidas por los usuarios (no se versionan)
 ├── requirements.txt          # Dependencias de Python
 └── README.md
 ```
@@ -161,7 +163,26 @@ Base de datos SQLite en `datos/reclamos.db`. Esquema `historial_reclamos`:
 
 La dirección (calle y número) se guarda con cada reclamo y por ahora **no participa del análisis con IA**.
 
-Funciones: `crear_tabla()`, `insertar_reclamo()`, `obtener_todos_reclamos()`, `obtener_reclamo_por_id()`, `actualizar_reclamo()`, `eliminar_reclamo()`, `obtener_reclamos_por_categoria()`, `contar_total_reclamos()`, `contar_reclamos_por_categoria()`, `obtener_reclamos_por_prioridad()`.
+Tabla `reclamo_imagenes` (fotos por reclamo):
+
+| Columna | Tipo |
+|---------|------|
+| `id` | INTEGER PRIMARY KEY AUTOINCREMENT |
+| `reclamo_id` | INTEGER (ref. `historial_reclamos.id`) |
+| `ruta` | TEXT |
+
+Funciones: `crear_tabla()`, `insertar_reclamo()` (devuelve el `id` creado), `insertar_imagen()`, `obtener_imagenes_reclamo()`, `obtener_todos_reclamos()`, `obtener_reclamo_por_id()`, `actualizar_reclamo()`, `eliminar_reclamo()`, `obtener_reclamos_por_categoria()`, `contar_total_reclamos()`, `contar_reclamos_por_categoria()`, `obtener_reclamos_por_prioridad()`.
+
+### `storage_imagenes.py`
+
+Almacena las fotos de los reclamos en `storage/fotos/{id_reclamo}/` (archivos) y guarda la referencia en la tabla `reclamo_imagenes`.
+
+- `guardar_imagenes(uploaded_files, reclamo_id)` → `(guardadas, rechazadas)`
+- `validar_archivo(uploaded_file)` → `(ok, motivo)` — valida formato (PNG/JPG/JPEG/GIF/WEBP) y tamaño máximo (15 MB).
+- `eliminar_fotos_reclamo(reclamo_id)` — borra la carpeta de fotos del reclamo.
+- `ruta_archivo(reclamo_id, nombre)` → ruta absoluta para visualizar la foto.
+
+> La carpeta `storage/` **no se versiona** (está en `.gitignore`).
 
 ### `ia.py`
 

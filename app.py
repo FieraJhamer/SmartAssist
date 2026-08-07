@@ -7,6 +7,7 @@ import base_datos
 import clasificador
 import plantillas_respuestas
 import ia
+import storage_imagenes
 
 import os
 
@@ -356,6 +357,13 @@ def pagina_nuevo_reclamo():
     with col_num:
         numero = st.text_input("Número")
 
+    fotos = st.file_uploader(
+        "Fotos del problema (opcional)",
+        type=["png", "jpg", "jpeg", "gif", "webp"],
+        accept_multiple_files=True,
+        help=f"Máximo {storage_imagenes.TAMANIO_MAXIMO_MB} MB por foto.",
+    )
+
     col_btn, _ = st.columns([1, 3])
     with col_btn:
         analizar = st.button("Clasificar y guardar", type="primary", width="stretch")
@@ -370,13 +378,22 @@ def pagina_nuevo_reclamo():
             return
         categoria, prioridad = clasificador.clasificar_comentario(comentario)
         respuesta = plantillas_respuestas.generar_respuesta(categoria)
-        base_datos.insertar_reclamo(
+        id_reclamo = base_datos.insertar_reclamo(
             comentario, categoria, prioridad, calle.strip(), numero.strip()
         )
 
+        guardadas, rechazadas = storage_imagenes.guardar_imagenes(fotos, id_reclamo)
+
         st.markdown("### Resultado")
         tarjeta_resultado(categoria, prioridad, respuesta)
-        st.success("Reclamo registrado correctamente en la base de datos.")
+        if guardadas:
+            st.success(
+                f"Reclamo registrado correctamente con {guardadas} foto(s)."
+            )
+        else:
+            st.success("Reclamo registrado correctamente en la base de datos.")
+        for nombre, motivo in rechazadas:
+            st.warning(f"{nombre}: {motivo}")
     footer()
 
 
@@ -406,6 +423,26 @@ def pagina_historial():
         return
 
     st.dataframe(df, width="stretch", hide_index=True)
+
+    st.markdown("## Fotos del reclamo")
+    st.caption("Imágenes subidas en el reclamo seleccionado.")
+    ids = [int(i) for i in df["ID"]]
+    etiquetas = {fila["ID"]: etiqueta_reclamo(fila) for _, fila in df.iterrows()}
+    id_fotos = st.selectbox(
+        "Seleccionar reclamo para ver fotos",
+        ids,
+        key="fotos_reclamo",
+        format_func=lambda i: etiquetas[i],
+    )
+    nombres_fotos = base_datos.obtener_imagenes_reclamo(int(id_fotos))
+    if nombres_fotos:
+        columnas = st.columns(min(len(nombres_fotos), 3))
+        for i, nombre in enumerate(nombres_fotos):
+            ruta = storage_imagenes.ruta_archivo(int(id_fotos), nombre)
+            with columnas[i % 3]:
+                st.image(ruta, width="stretch")
+    else:
+        st.info("Este reclamo no tiene fotos adjuntas.")
 
     st.markdown("## Analizar con IA")
     st.caption("Resumen o respuesta automática generada con Ollama para un reclamo seleccionado.")
@@ -478,8 +515,9 @@ def pagina_historial():
         format_func=lambda i: etiquetas[i],
     )
     if st.button("Eliminar reclamo", type="primary", key="btn_eliminar"):
+        storage_imagenes.eliminar_fotos_reclamo(int(id_eliminar))
         base_datos.eliminar_reclamo(int(id_eliminar))
-        st.success(f"Reclamo #{id_eliminar} eliminado.")
+        st.success(f"Reclamo #{id_eliminar} eliminado (junto con sus fotos).")
     footer()
 
 

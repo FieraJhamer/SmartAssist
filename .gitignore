@@ -10,6 +10,9 @@ env/
 # Base de datos local (se crea sola al ejecutar)
 datos/
 
+# Imágenes subidas por los usuarios
+storage/
+
 # Entornos y secretos
 .env
 .env.*

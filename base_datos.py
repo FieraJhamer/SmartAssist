@@ -28,6 +28,16 @@ def crear_tabla():
         cursor.execute("ALTER TABLE historial_reclamos ADD COLUMN calle TEXT")
     if "numero" not in columnas:
         cursor.execute("ALTER TABLE historial_reclamos ADD COLUMN numero TEXT")
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reclamo_imagenes(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reclamo_id INTEGER,
+            ruta TEXT,
+            FOREIGN KEY(reclamo_id) REFERENCES historial_reclamos(id)
+        )
+    """)
+
     conexion.commit()
     conexion.close()
     print("Base creada correctamente")
@@ -41,7 +51,32 @@ def insertar_reclamo(comentario, categoria, prioridad, calle="", numero=""):
         VALUES(?, ?, ?, ?, ?)
     """, (comentario, categoria, prioridad, calle, numero))
     conexion.commit()
+    id_reclamo = cursor.lastrowid
     conexion.close()
+    return id_reclamo
+
+
+def insertar_imagen(reclamo_id, ruta):
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        INSERT INTO reclamo_imagenes(reclamo_id, ruta)
+        VALUES(?, ?)
+    """, (reclamo_id, ruta))
+    conexion.commit()
+    conexion.close()
+
+
+def obtener_imagenes_reclamo(reclamo_id):
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute(
+        "SELECT ruta FROM reclamo_imagenes WHERE reclamo_id = ? ORDER BY id",
+        (reclamo_id,),
+    )
+    rutas = [fila[0] for fila in cursor.fetchall()]
+    conexion.close()
+    return rutas
 
 
 def obtener_todos_reclamos():
@@ -89,6 +124,7 @@ def actualizar_reclamo(id, comentario, categoria, prioridad, calle="", numero=""
 def eliminar_reclamo(id):
     conexion = conectar()
     cursor = conexion.cursor()
+    cursor.execute("DELETE FROM reclamo_imagenes WHERE reclamo_id = ?", (id,))
     cursor.execute("DELETE FROM historial_reclamos WHERE id = ?", (id,))
     conexion.commit()
     conexion.close()
