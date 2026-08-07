@@ -307,7 +307,10 @@ def tarjeta_resultado(categoria, prioridad, respuesta):
 
 def dataframe_reclamos():
     registros = base_datos.obtener_todos_reclamos()
-    df = pd.DataFrame(registros, columns=["ID", "Comentario", "Categoría", "Prioridad"])
+    df = pd.DataFrame(
+        registros,
+        columns=["ID", "Comentario", "Categoría", "Prioridad", "Calle", "Número"],
+    )
     return df
 
 
@@ -347,6 +350,12 @@ def pagina_nuevo_reclamo():
         label_visibility="collapsed",
     )
 
+    col_calle, col_num = st.columns(2)
+    with col_calle:
+        calle = st.text_input("Calle")
+    with col_num:
+        numero = st.text_input("Número")
+
     col_btn, _ = st.columns([1, 3])
     with col_btn:
         analizar = st.button("Clasificar y guardar", type="primary", width="stretch")
@@ -356,9 +365,14 @@ def pagina_nuevo_reclamo():
         if not comentario:
             st.warning("Ingrese un comentario antes de analizar.")
             return
+        if not calle.strip() or not numero.strip():
+            st.warning("Ingrese la calle y el número de la dirección.")
+            return
         categoria, prioridad = clasificador.clasificar_comentario(comentario)
         respuesta = plantillas_respuestas.generar_respuesta(categoria)
-        base_datos.insertar_reclamo(comentario, categoria, prioridad)
+        base_datos.insertar_reclamo(
+            comentario, categoria, prioridad, calle.strip(), numero.strip()
+        )
 
         st.markdown("### Resultado")
         tarjeta_resultado(categoria, prioridad, respuesta)
@@ -443,8 +457,17 @@ def pagina_historial():
             index=PRIORIDADES.index(registro[3]) if registro[3] in PRIORIDADES else 0,
             key="edit_pri",
         )
+        nueva_calle = st.text_input("Calle", value=registro[4] or "", key="edit_calle")
+        nuevo_numero = st.text_input("Número", value=registro[5] or "", key="edit_num")
         if st.button("Guardar cambios", key="btn_editar"):
-            base_datos.actualizar_reclamo(int(id_editar), nuevo_comentario, nueva_categoria, nueva_prioridad)
+            base_datos.actualizar_reclamo(
+                int(id_editar),
+                nuevo_comentario,
+                nueva_categoria,
+                nueva_prioridad,
+                nueva_calle.strip(),
+                nuevo_numero.strip(),
+            )
             st.success("Reclamo actualizado correctamente.")
 
     st.markdown("## Eliminar reclamo")

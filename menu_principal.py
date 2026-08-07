@@ -9,10 +9,11 @@ def mostrar_historial():
     if not registros:
         print("No hay registros en el historial.")
         return
-    print(f"\n{'ID':<4} {'Comentario':<40} {'Categoría':<15} {'Prioridad':<10}")
-    print("-" * 75)
+    print(f"\n{'ID':<4} {'Comentario':<30} {'Categoría':<15} {'Prioridad':<8} {'Dirección':<22}")
+    print("-" * 85)
     for r in registros:
-        print(f"{r[0]:<4} {r[1][:38]:<40} {r[2]:<15} {r[3]:<10}")
+        direccion = f"{r[4] or ''} {r[5] or ''}".strip()
+        print(f"{r[0]:<4} {r[1][:28]:<30} {r[2]:<15} {r[3]:<8} {direccion:<22}")
     print()
 
 
@@ -67,13 +68,20 @@ def iniciar():
                 print("Comentario vacío, intente de nuevo.")
                 continue
 
+            calle = input("Ingrese la calle: ").strip()
+            numero = input("Ingrese el número: ").strip()
+            if not calle or not numero:
+                print("Debe ingresar calle y número, intente de nuevo.")
+                continue
+
             categoria, prioridad = clasificador.clasificar_comentario(comentario)
             respuesta = plantillas_respuestas.generar_respuesta(categoria)
 
-            base_datos.insertar_reclamo(comentario, categoria, prioridad)
+            base_datos.insertar_reclamo(comentario, categoria, prioridad, calle, numero)
 
             print(f"\n--- Resultado ---")
             print(f"Comentario:  {comentario}")
+            print(f"Dirección:   {calle} {numero}")
             print(f"Categoría:   {categoria}")
             print(f"Prioridad:   {prioridad}")
             print(f"Respuesta:   {respuesta}")
@@ -88,10 +96,11 @@ def iniciar():
             if not registros:
                 print(f"No hay registros en la categoría '{categoria}'.")
                 continue
-            print(f"\n{'ID':<4} {'Comentario':<40} {'Prioridad':<10}")
-            print("-" * 60)
+            print(f"\n{'ID':<4} {'Comentario':<30} {'Prioridad':<8} {'Dirección':<22}")
+            print("-" * 70)
             for r in registros:
-                print(f"{r[0]:<4} {r[1][:38]:<40} {r[3]:<10}")
+                direccion = f"{r[4] or ''} {r[5] or ''}".strip()
+                print(f"{r[0]:<4} {r[1][:28]:<30} {r[3]:<8} {direccion:<22}")
             print()
 
         elif opcion == "4":
@@ -104,7 +113,7 @@ def iniciar():
             if not registro:
                 print("No se encontró un reclamo con ese ID.")
                 continue
-            print(f"Editando: {registro[1][:40]} | {registro[2]} | {registro[3]}")
+            print(f"Editando: {registro[1][:40]} | {registro[2]} | {registro[3]} | {registro[4] or ''} {registro[5] or ''}")
             nuevo_comentario = input("Nuevo comentario (Enter para mantener): ").strip()
             if not nuevo_comentario:
                 nuevo_comentario = registro[1]
@@ -114,7 +123,16 @@ def iniciar():
             nueva_prioridad = input(f"Nueva prioridad (Enter para mantener '{registro[3]}'): ").strip().upper()
             if not nueva_prioridad:
                 nueva_prioridad = registro[3]
-            base_datos.actualizar_reclamo(int(id_editar), nuevo_comentario, nueva_categoria, nueva_prioridad)
+            nueva_calle = input(f"Nueva calle (Enter para mantener '{registro[4] or ''}'): ").strip()
+            if not nueva_calle:
+                nueva_calle = registro[4] or ""
+            nuevo_numero = input(f"Nuevo número (Enter para mantener '{registro[5] or ''}'): ").strip()
+            if not nuevo_numero:
+                nuevo_numero = registro[5] or ""
+            base_datos.actualizar_reclamo(
+                int(id_editar), nuevo_comentario, nueva_categoria, nueva_prioridad,
+                nueva_calle, nuevo_numero,
+            )
             print("Reclamo actualizado correctamente.")
 
         elif opcion == "5":

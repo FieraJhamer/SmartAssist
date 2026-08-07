@@ -156,6 +156,10 @@ Base de datos SQLite en `datos/reclamos.db`. Esquema `historial_reclamos`:
 | `comentario` | TEXT |
 | `categoria` | TEXT |
 | `prioridad` | TEXT |
+| `calle` | TEXT |
+| `numero` | TEXT |
+
+La dirección (calle y número) se guarda con cada reclamo y por ahora **no participa del análisis con IA**.
 
 Funciones: `crear_tabla()`, `insertar_reclamo()`, `obtener_todos_reclamos()`, `obtener_reclamo_por_id()`, `actualizar_reclamo()`, `eliminar_reclamo()`, `obtener_reclamos_por_categoria()`, `contar_total_reclamos()`, `contar_reclamos_por_categoria()`, `obtener_reclamos_por_prioridad()`.
 

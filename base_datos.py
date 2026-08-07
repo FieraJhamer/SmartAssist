@@ -18,21 +18,28 @@ def crear_tabla():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             comentario TEXT,
             categoria TEXT,
-            prioridad TEXT
+            prioridad TEXT,
+            calle TEXT,
+            numero TEXT
         )
     """)
+    columnas = [fila[1] for fila in cursor.execute("PRAGMA table_info(historial_reclamos)")]
+    if "calle" not in columnas:
+        cursor.execute("ALTER TABLE historial_reclamos ADD COLUMN calle TEXT")
+    if "numero" not in columnas:
+        cursor.execute("ALTER TABLE historial_reclamos ADD COLUMN numero TEXT")
     conexion.commit()
     conexion.close()
     print("Base creada correctamente")
 
 
-def insertar_reclamo(comentario, categoria, prioridad):
+def insertar_reclamo(comentario, categoria, prioridad, calle="", numero=""):
     conexion = conectar()
     cursor = conexion.cursor()
     cursor.execute("""
-        INSERT INTO historial_reclamos(comentario, categoria, prioridad)
-        VALUES(?, ?, ?)
-    """, (comentario, categoria, prioridad))
+        INSERT INTO historial_reclamos(comentario, categoria, prioridad, calle, numero)
+        VALUES(?, ?, ?, ?, ?)
+    """, (comentario, categoria, prioridad, calle, numero))
     conexion.commit()
     conexion.close()
 
@@ -67,14 +74,14 @@ def obtener_reclamo_por_id(id):
     return registro
 
 
-def actualizar_reclamo(id, comentario, categoria, prioridad):
+def actualizar_reclamo(id, comentario, categoria, prioridad, calle="", numero=""):
     conexion = conectar()
     cursor = conexion.cursor()
     cursor.execute("""
         UPDATE historial_reclamos
-        SET comentario = ?, categoria = ?, prioridad = ?
+        SET comentario = ?, categoria = ?, prioridad = ?, calle = ?, numero = ?
         WHERE id = ?
-    """, (comentario, categoria, prioridad, id))
+    """, (comentario, categoria, prioridad, calle, numero, id))
     conexion.commit()
     conexion.close()
 
