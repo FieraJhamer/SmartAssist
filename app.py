@@ -92,7 +92,7 @@ def inyectar_css():
         }
 
         .sidebar-brand { text-align: center; padding: 0.25rem 0 0.5rem 0; }
-        .sidebar-brand img { display: block; margin: 0 auto; width: 200px; height: auto; }
+        .sidebar-brand img { display: block; margin: 0 auto; margin-bottom: 1rem; width: 280px; height: auto; }
         .sidebar-nombre {
             font-family: 'Montserrat', system-ui, sans-serif;
             font-weight: 800;
@@ -575,6 +575,10 @@ def pagina_analisis_ia():
     footer()
 
 
+def _navegar_a(nombre):
+    st.session_state.pagina_actual = nombre
+
+
 def main():
     base_datos.crear_tabla()
     inyectar_css()
@@ -600,16 +604,17 @@ def main():
     if "pagina_actual" not in st.session_state:
         st.session_state.pagina_actual = "Nuevo reclamo"
 
-    st.sidebar.markdown("**Sección**")
+    # Secciones
     for nombre in ["Nuevo reclamo", "Historial", "Estadísticas", "Análisis Inteligente"]:
         activo = st.session_state.pagina_actual == nombre
-        if st.sidebar.button(
+        st.sidebar.button(
             nombre,
             key=f"nav_{nombre}",
             type="primary" if activo else "secondary",
             width="stretch",
-        ):
-            st.session_state.pagina_actual = nombre
+            on_click=_navegar_a,
+            args=(nombre,),
+        )
 
     st.sidebar.markdown("---")
     st.sidebar.markdown("**Categorías del municipio**")
