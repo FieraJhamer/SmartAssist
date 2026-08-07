@@ -83,7 +83,7 @@ def iniciar():
             mostrar_historial()
 
         elif opcion == "3":
-            categoria = input("\nCategoría (ACCESO, CONSULTA, DOCUMENTACION, OTRO): ").strip().upper()
+            categoria = input("\nCategoría (AGUA_CLOACAS, RECOLECCION_RESIDUOS, ALUMBRADO, SEGURIDAD, MANTENIMIENTO_VIAL, TRANSPORTE_PUBLICO, LIMPIEZA, CONSULTA): ").strip().upper()
             registros = base_datos.obtener_reclamos_por_categoria(categoria)
             if not registros:
                 print(f"No hay registros en la categoría '{categoria}'.")

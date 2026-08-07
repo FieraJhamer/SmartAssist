@@ -8,14 +8,14 @@ def clasificar_comentario(comentario):
 
 if __name__ == "__main__":
     tests = [
-        "No puedo ingresar al sistema",
-        "La página está lenta",
-        "Necesito un certificado",
-        "Olvidé mi contraseña",
-        "Quiero información sobre cursos",
-        "La factura no coincide",
-        "El producto llegó dañado",
-        "Quiero dar de baja el servicio",
+        "No hay agua en mi barrio desde hace dos días",
+        "La plaza está llena de basura y contenedores desbordados",
+        "Se cortó el alumbrado público en la cuadra",
+        "Hubo un robo y hay árboles en peligro de caerse",
+        "La calle tiene baches y la señalización está borrada",
+        "El colectivo de la línea 3 tarda una hora en pasar",
+        "El terreno baldío tiene maleza y escombros",
+        "Quiero información sobre turnos municipales",
     ]
     for t in tests:
         cat, pri = clasificar_comentario(t)

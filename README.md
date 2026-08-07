@@ -1,19 +1,85 @@
-# SmartAssist AI Analyst
+# 🏙️ SmartAssist — Reclamos Ciudadanos de La Rioja
 
-CLI en Python que clasifica comentarios de usuarios por categoría y prioridad, genera respuestas automáticas y persiste todo en SQLite.
+Sistema web + CLI para que los ciudadanos de **La Rioja (Argentina)** registren reclamos municipales. Clasifica automáticamente cada reclamo por **categoría y prioridad**, genera respuestas, persiste todo en **SQLite**, lo analiza con **Pandas** y lo interpreta con un **modelo de IA local (Ollama)**.
 
-## Requisitos
+---
 
-- Python 3.x
+## ✨ Funcionalidades
 
-## Instalación
+- 📝 Carga de reclamos ciudadanos con clasificación automática (8 categorías municipales).
+- 📊 Historial con filtros por categoría y prioridad, edición y eliminación.
+- 🗂️ Estadísticas y reportes con Pandas.
+- 🤖 Análisis inteligente con IA local (Ollama): informe del estado, correo a gerencia, resumen y respuesta por reclamo.
+- 🎨 Interfaz web responsive con la identidad visual de la Marca La Rioja.
+
+## 🧠 Categorías de reclamos
+
+| Categoría | Prioridad | Palabras clave (ej.) |
+|-----------|-----------|----------------------|
+| AGUA_CLOACAS | ALTA | agua, cloaca, pérdida, filtra, corte de agua |
+| RECOLECCION_RESIDUOS | ALTA | basura, residuo, contenedor, basural |
+| ALUMBRADO | ALTA | alumbrado, luminaria, farol, luz, apagado |
+| SEGURIDAD | ALTA | seguridad, robo, peligro, defensa civil |
+| MANTENIMIENTO_VIAL | MEDIA | bache, vereda, calle, asfalto, señalización |
+| TRANSPORTE_PUBLICO | MEDIA | colectivo, transporte, micro, ómnibus, parada |
+| LIMPIEZA | MEDIA | poda, limpieza, maleza, baldío, escombro |
+| CONSULTA | BAJA | cualquier consulta general |
+
+La clasificación es **case-insensitive** y no distingue acentos (se normalizan).
+
+---
+
+## 🚀 Instalación (desde cero)
+
+Requisitos: **Python 3.10+** y **git**.
 
 ```bash
-git clone <repo>
+git clone <URL-DEL-REPOSITORIO>
 cd SmartAssist
+
+# 1. Entorno virtual (recomendado)
+python -m venv .venv
+.venv\Scripts\activate        # Windows
+source .venv/bin/activate     # Linux / macOS
+
+# 2. Instalar dependencias
+pip install -r requirements.txt
 ```
 
-## Uso
+### 🤖 Configurar Ollama (para la IA)
+
+1. Instalar [Ollama](https://ollama.com/) y descargar el modelo:
+
+   ```bash
+   ollama pull gemma3:1b
+   ```
+
+2. Verificar que responde:
+
+   ```bash
+   ollama run gemma3:1b
+   ```
+
+> La app usa el modelo `gemma3:1b` (definido en `ia.py`). Si querés otro modelo, cambiá la constante `MODELO` en ese archivo.
+
+---
+
+## ▶️ Uso
+
+### Interfaz web (recomendada)
+
+```bash
+streamlit run app.py
+```
+
+Secciones:
+
+- **Nuevo reclamo** — ingresá el comentario del ciudadano y el sistema lo clasifica.
+- **Historial** — consultá, filtrá, editá, eliminá y analizá con IA cada reclamo.
+- **Estadísticas** — métricas y gráficos por categoría y prioridad.
+- **Análisis Inteligente** — generá informe con IA, correo a gerencia y chat libre.
+
+### Consola CLI
 
 ```bash
 python menu_principal.py
@@ -28,30 +94,45 @@ python menu_principal.py
 5. Eliminar reclamo
 6. Estadísticas
 7. Generar reporte
-8. Salir
+0. Salir
 ```
 
-## Estructura
+---
 
-| Archivo | Rol |
-|---------|-----|
-| `menu_principal.py` | Punto de entrada, menú interactivo |
-| `clasificador.py` | Wrapper que delega la clasificación |
-| `motor_clasificacion.py` | Motor de clasificación por palabras clave |
-| `plantillas_respuestas.py` | Plantillas de respuesta por categoría |
-| `base_datos.py` | Capa de persistencia SQLite |
-| `cliente_api.py` | Cliente HTTP para API externa (no integrado) |
-| `datos/reclamos.db` | Base de datos SQLite |
+## 📁 Estructura del proyecto
 
-## Módulos
+```
+SmartAssist/
+├── app.py                    # Interfaz web Streamlit (punto de entrada principal)
+├── menu_principal.py         # Menú interactivo de consola
+├── clasificador.py           # Wrapper de clasificación + tests de ejemplo
+├── motor_clasificacion.py    # Motor de clasificación por palabras clave
+├── plantillas_respuestas.py  # Respuestas automáticas por categoría
+├── base_datos.py             # Capa de persistencia SQLite (CRUD)
+├── ia.py                     # Integración con Ollama (IA local)
+├── pandas_analisis.py        # Estadísticas con Pandas
+├── cliente_api.py            # Cliente HTTP para API externa (no integrado)
+├── assets/                   # Imágenes y recursos (logo de La Rioja, favicon)
+├── docs/                     # Documentación de diseño y especificación
+├── markdowns/                # Material de las clases del curso
+├── datos/                    # Base de datos SQLite (se crea sola, no se versiona)
+├── requirements.txt          # Dependencias de Python
+└── README.md
+```
 
-### `menu_principal.py`
+---
 
-Funciones:
-- `mostrar_historial()` — imprime todos los registros
-- `generar_reporte()` — imprime reporte con total, desglose, categoría más frecuente y fecha/hora
-- `mostrar_menu()` — muestra opciones y captura input
-- `iniciar()` — bucle principal del programa
+## 🔍 Detalle de módulos
+
+### `app.py`
+
+Interfaz web con Streamlit. Configura `layout="wide"`, inyecta el CSS de la marca (paleta La Rioja, Montserrat + Plus Jakarta Sans) y organiza la navegación en el sidebar con el logo del municipio.
+
+### `motor_clasificacion.py`
+
+- `analizar_comentario(texto)` → `{"comentario", "categoria", "prioridad"}`
+
+Normaliza el texto (minúsculas y sin acentos) y aplica reglas de palabras clave.
 
 ### `clasificador.py`
 
@@ -59,30 +140,15 @@ Funciones:
 
 Ejecución directa: `python clasificador.py` — corre 8 tests de ejemplo.
 
-### `motor_clasificacion.py`
-
-- `analizar_comentario(texto)` → `{comentario, categoria, prioridad}`
-
-Reglas de clasificación (case-insensitive):
-
-| Palabras clave | Categoría | Prioridad |
-|----------------|-----------|-----------|
-| `ingresar` | ERROR_ACCESO | ALTA |
-| `lento`, `demora`, `lenta` | RENDIMIENTO | MEDIA |
-| `factura`, `cobro`, `pago`, `tarjeta`, `compra` | FACTURACION | ALTA |
-| `dañado`, `equivocado`, `incompleto`, `faltante`, `destruido` | DEVOLUCION | ALTA |
-| `baja`, `liquidar`, `saldar`, `rescindir` | CANCELACION | ALTA |
-| (ninguna) | CONSULTA | BAJA |
-
 ### `plantillas_respuestas.py`
 
 - `generar_respuesta(categoria)` → `str`
 
-Variables: `RESPUESTAS` — dict que mapea categoría a texto de respuesta. Fallback a `"OTRO"`.
+`RESPUESTAS` mapea cada categoría a una respuesta oficial. Fallback a `"OTRO"`.
 
 ### `base_datos.py`
 
-Esquema SQLite (`historial_reclamos`):
+Base de datos SQLite en `datos/reclamos.db`. Esquema `historial_reclamos`:
 
 | Columna | Tipo |
 |---------|------|
@@ -91,23 +157,43 @@ Esquema SQLite (`historial_reclamos`):
 | `categoria` | TEXT |
 | `prioridad` | TEXT |
 
-Funciones principales:
-- `crear_tabla()` — crea la tabla si no existe
-- `insertar_reclamo(comentario, categoria, prioridad)`
-- `obtener_todos_reclamos()` → `list[tuple]`
-- `obtener_reclamo_por_id(id)` → `tuple | None`
-- `actualizar_reclamo(id, comentario, categoria, prioridad)`
-- `eliminar_reclamo(id)`
-- `obtener_reclamos_por_categoria(categoria)` → `list[tuple]`
-- `contar_total_reclamos()` → `int`
-- `contar_reclamos_por_categoria()` → `list[(str, int)]`
-- `obtener_reclamos_por_prioridad(prioridad)` → `list[tuple]`
-- `mostrar_historial()` → alias de `obtener_todos_reclamos()`
-- `guardar_reclamo(c, cat, pri)` → alias de `insertar_reclamo()`
-- `crear_base()` → alias de `crear_tabla()`
+Funciones: `crear_tabla()`, `insertar_reclamo()`, `obtener_todos_reclamos()`, `obtener_reclamo_por_id()`, `actualizar_reclamo()`, `eliminar_reclamo()`, `obtener_reclamos_por_categoria()`, `contar_total_reclamos()`, `contar_reclamos_por_categoria()`, `obtener_reclamos_por_prioridad()`.
+
+### `ia.py`
+
+- `consultar_ia(prompt)` → `str`
+- `generar_informe_ia(estadisticas_texto, rol, max_lineas)` → `str`
+- `generar_email_ia(estadisticas_texto)` → `str`
+- `resumir_comentario_ia(comentario)` → `str`
+- `redactar_respuesta_ia(comentario, categoria)` → `str`
+
+### `pandas_analisis.py`
+
+Lee la base de datos y muestra las estadísticas con Pandas.
 
 ### `cliente_api.py`
 
-- `analizar_comentario_con_api(comentario)` → `(categoria, prioridad)`
+Cliente HTTP para una API externa. **No integrado** en el flujo principal.
 
-Envía POST a `URL_API_EXTERNA` con `{"texto": comentario}`. No integrado en el flujo principal.
+---
+
+## 🗂️ Base de datos
+
+La base `datos/reclamos.db` se **crea automáticamente** al ejecutar la app (primera corrida). No está versionada en git; en una PC nueva se regenera sola.
+
+---
+
+## 🧪 Verificación rápida
+
+```bash
+python clasificador.py   # ejecuta 8 tests de clasificación
+python -m py_compile app.py ia.py base_datos.py  # chequea sintaxis
+```
+
+---
+
+## 📚 Documentación adicional
+
+- `docs/guia-visual-la-rioja.md` — guía de diseño de la Marca La Rioja.
+- `docs/new_features.md` — especificación de la integración con Ollama.
+- `markdowns/` — material de las clases (consigna, especificaciones, pandas, etc.).

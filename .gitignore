@@ -1,3 +1,25 @@
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Base de datos local (se crea sola al ejecutar)
 datos/
+
+# Entornos y secretos
+.env
+.env.*
+*.local
+
+# Sistemas operativos
+.DS_Store
+Thumbs.db
+
+# Editores / IDE
+.vscode/
+.idea/
+*.swp
