@@ -11,10 +11,11 @@ import ia
 import os
 
 logo_municipio = os.path.join(os.path.dirname(__file__), "assets", "Marca_LaRioja_Color.png")
+favicon = os.path.join(os.path.dirname(__file__), "assets", "favicon.png")
 
 st.set_page_config(
-    page_title="Municipalidad de La Rioja · Reclamos Ciudadanos",
-    page_icon=logo_municipio if os.path.exists(logo_municipio) else "🏙️",
+    page_title="Reclamos Ciudadanos · La Rioja",
+    page_icon=favicon if os.path.exists(favicon) else "🏙️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -91,7 +92,7 @@ def inyectar_css():
         }
 
         .sidebar-brand { text-align: center; padding: 0.25rem 0 0.5rem 0; }
-        .sidebar-brand img { display: block; margin: 0 auto; width: 130px; height: auto; }
+        .sidebar-brand img { display: block; margin: 0 auto; width: 200px; height: auto; }
         .sidebar-nombre {
             font-family: 'Montserrat', system-ui, sans-serif;
             font-weight: 800;
@@ -228,6 +229,12 @@ def inyectar_css():
             box-shadow: 0 6px 20px rgba(230, 27, 54, 0.35);
         }
 
+        [data-testid="stSidebar"] .stButton > button {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+        }
+
         .stTextArea textarea,
         .stTextInput input,
         .stSelectbox [data-baseweb="select"] > div {
@@ -302,6 +309,13 @@ def dataframe_reclamos():
     registros = base_datos.obtener_todos_reclamos()
     df = pd.DataFrame(registros, columns=["ID", "Comentario", "Categoría", "Prioridad"])
     return df
+
+
+def etiqueta_reclamo(fila):
+    comentario = fila["Comentario"]
+    if len(comentario) > 45:
+        comentario = comentario[:45] + "…"
+    return f"#{int(fila['ID'])} · {comentario}"
 
 
 def estadisticas_a_texto():
@@ -381,8 +395,14 @@ def pagina_historial():
 
     st.markdown("## Analizar con IA")
     st.caption("Resumen o respuesta automática generada con Ollama para un reclamo seleccionado.")
-    ids = [str(int(i)) for i in df["ID"]]
-    id_ia = st.selectbox("Seleccionar reclamo", ids, key="ia_reclamo")
+    ids = [int(i) for i in df["ID"]]
+    etiquetas = {fila["ID"]: etiqueta_reclamo(fila) for _, fila in df.iterrows()}
+    id_ia = st.selectbox(
+        "Seleccionar reclamo",
+        ids,
+        key="ia_reclamo",
+        format_func=lambda i: etiquetas[i],
+    )
     registro_ia = base_datos.obtener_reclamo_por_id(int(id_ia))
     if registro_ia:
         c1, c2 = st.columns(2)
@@ -402,7 +422,12 @@ def pagina_historial():
                         st.error(f"No se pudo conectar con Ollama: {e}")
 
     st.markdown("## Editar reclamo")
-    id_editar = st.selectbox("Seleccionar reclamo", ids, key="editar_id")
+    id_editar = st.selectbox(
+        "Seleccionar reclamo",
+        ids,
+        key="editar_id",
+        format_func=lambda i: etiquetas[i],
+    )
     registro = base_datos.obtener_reclamo_por_id(int(id_editar))
     if registro:
         nuevo_comentario = st.text_input("Comentario", value=registro[1], key="edit_com")
@@ -423,7 +448,12 @@ def pagina_historial():
             st.success("Reclamo actualizado correctamente.")
 
     st.markdown("## Eliminar reclamo")
-    id_eliminar = st.selectbox("Seleccionar reclamo a eliminar", ids, key="borrar_id")
+    id_eliminar = st.selectbox(
+        "Seleccionar reclamo a eliminar",
+        ids,
+        key="borrar_id",
+        format_func=lambda i: etiquetas[i],
+    )
     if st.button("Eliminar reclamo", type="primary", key="btn_eliminar"):
         base_datos.eliminar_reclamo(int(id_eliminar))
         st.success(f"Reclamo #{id_eliminar} eliminado.")
@@ -510,15 +540,6 @@ def pagina_analisis_ia():
                 st.error(f"No se pudo conectar con Ollama: {e}")
 
     st.markdown("---")
-    st.markdown("## Correo para la gerencia")
-    if st.button("Redactar correo electrónico", key="btn_ia_email"):
-        with st.spinner("Redactando correo…"):
-            try:
-                st.markdown(ia.generar_email_ia(estadisticas))
-            except Exception as e:
-                st.error(f"No se pudo conectar con Ollama: {e}")
-
-    st.markdown("---")
     st.markdown("## Chat libre con la IA")
     consulta = st.text_input("Escriba una pregunta sobre el sistema o los datos", key="ia_consulta")
     if consulta.strip() and st.button("Enviar consulta", key="btn_ia_chat"):
@@ -543,7 +564,6 @@ def main():
             f"""
             <div class="sidebar-brand">
                 <img src="data:image/png;base64,{logo_b64}" alt="Marca La Rioja">
-                <p class="sidebar-sub">Reclamos Ciudadanos</p>
                 <p class="sidebar-muni">Municipalidad de La Rioja</p>
             </div>
             """,
@@ -554,11 +574,19 @@ def main():
         st.sidebar.markdown("#### Reclamos Ciudadanos")
     st.sidebar.markdown("---")
 
-    opcion = st.sidebar.radio(
-        "Sección",
-        ["Nuevo reclamo", "Historial", "Estadísticas", "Análisis Inteligente"],
-        label_visibility="collapsed",
-    )
+    if "pagina_actual" not in st.session_state:
+        st.session_state.pagina_actual = "Nuevo reclamo"
+
+    st.sidebar.markdown("**Sección**")
+    for nombre in ["Nuevo reclamo", "Historial", "Estadísticas", "Análisis Inteligente"]:
+        activo = st.session_state.pagina_actual == nombre
+        if st.sidebar.button(
+            nombre,
+            key=f"nav_{nombre}",
+            type="primary" if activo else "secondary",
+            width="stretch",
+        ):
+            st.session_state.pagina_actual = nombre
 
     st.sidebar.markdown("---")
     st.sidebar.markdown("**Categorías del municipio**")
@@ -570,11 +598,12 @@ def main():
         )
     st.sidebar.caption("Clasificador inteligente de reclamos · v1.0")
 
-    if opcion == "Nuevo reclamo":
+    pagina = st.session_state.pagina_actual
+    if pagina == "Nuevo reclamo":
         pagina_nuevo_reclamo()
-    elif opcion == "Historial":
+    elif pagina == "Historial":
         pagina_historial()
-    elif opcion == "Estadísticas":
+    elif pagina == "Estadísticas":
         pagina_estadisticas()
     else:
         pagina_analisis_ia()
