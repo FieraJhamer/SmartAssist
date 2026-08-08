@@ -422,6 +422,8 @@ def pagina_historial():
         footer()
         return
 
+    df = df.sort_values("ID", ascending=False).reset_index(drop=True)
+
     st.dataframe(df, width="stretch", hide_index=True)
 
     st.markdown("## Fotos del reclamo")
@@ -443,34 +445,6 @@ def pagina_historial():
                 st.image(ruta, width="stretch")
     else:
         st.info("Este reclamo no tiene fotos adjuntas.")
-
-    st.markdown("## Analizar con IA")
-    st.caption("Resumen o respuesta automática generada con Ollama para un reclamo seleccionado.")
-    ids = [int(i) for i in df["ID"]]
-    etiquetas = {fila["ID"]: etiqueta_reclamo(fila) for _, fila in df.iterrows()}
-    id_ia = st.selectbox(
-        "Seleccionar reclamo",
-        ids,
-        key="ia_reclamo",
-        format_func=lambda i: etiquetas[i],
-    )
-    registro_ia = base_datos.obtener_reclamo_por_id(int(id_ia))
-    if registro_ia:
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("Resumir comentario", key="btn_ia_resumir"):
-                with st.spinner("Resumiendo…"):
-                    try:
-                        st.markdown(ia.resumir_comentario_ia(registro_ia[1]))
-                    except Exception as e:
-                        st.error(f"No se pudo conectar con Ollama: {e}")
-        with c2:
-            if st.button("Redactar respuesta al usuario", key="btn_ia_redactar"):
-                with st.spinner("Redactando respuesta…"):
-                    try:
-                        st.markdown(ia.redactar_respuesta_ia(registro_ia[1], registro_ia[2]))
-                    except Exception as e:
-                        st.error(f"No se pudo conectar con Ollama: {e}")
 
     st.markdown("## Editar reclamo")
     id_editar = st.selectbox(

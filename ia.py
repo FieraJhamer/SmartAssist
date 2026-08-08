@@ -41,26 +41,5 @@ Incluye asunto, saludo, cuerpo y despedida.
     return consultar_ia(prompt)
 
 
-def resumir_comentario_ia(comentario):
-    prompt = f"""
-Resume el siguiente reclamo ciudadano en una o dos frases:
-
-"{comentario}"
-"""
-    return consultar_ia(prompt)
-
-
-def redactar_respuesta_ia(comentario, categoria):
-    prompt = f"""
-Un ciudadano realizo el siguiente reclamo municipal clasificado como {categoria}:
-
-"{comentario}"
-
-Redacta una respuesta cordial y profesional dirigida al ciudadano, en español,
-sin saludo formal de cierre largo.
-"""
-    return consultar_ia(prompt)
-
-
 if __name__ == "__main__":
     print(consultar_ia("Hola, decis hola."))
