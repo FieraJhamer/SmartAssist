@@ -134,13 +134,15 @@ Interfaz web con Streamlit. Configura `layout="wide"`, inyecta el CSS de la marc
 
 - `analizar_comentario(texto)` → `{"comentario", "categoria", "prioridad"}`
 
-Normaliza el texto (minúsculas y sin acentos) y aplica reglas de palabras clave.
+Normaliza el texto (minúsculas y sin acentos) y aplica reglas de palabras clave. Define la **prioridad por reglas** (primera palabra clave que coincida).
 
 ### `clasificador.py`
 
 - `clasificar_comentario(comentario)` → `(categoria, prioridad)`
 
 Ejecución directa: `python clasificador.py` — corre 8 tests de ejemplo.
+
+> **Asignación final de prioridad:** en el alta web la prioridad por reglas se combina con una **segunda opinión de la IA** (`sugerir_prioridad_ia` + `combinar_prioridades`). Se toma siempre el nivel de mayor severidad (ALTA > MEDIA > BAJA), de modo que la IA puede escalar reclamos que las reglas no detectan bien. La CLI por ahora usa solo las reglas.
 
 ### `plantillas_respuestas.py`
 
@@ -189,8 +191,9 @@ Almacena las fotos de los reclamos en `storage/fotos/{id_reclamo}/` (archivos) y
 - `consultar_ia(prompt)` → `str`
 - `generar_informe_ia(estadisticas_texto, rol, max_lineas)` → `str`
 - `generar_email_ia(estadisticas_texto)` → `str`
-- `resumir_comentario_ia(comentario)` → `str`
-- `redactar_respuesta_ia(comentario, categoria)` → `str`
+- `verificar_comentario_ia(comentario)` → `(bool, str)` — detecta spam/gibberish antes de guardar.
+- `sugerir_prioridad_ia(comentario)` → `(prioridad|None, detalle)` — segunda opinión de prioridad con IA.
+- `combinar_prioridades(prioridad_reglas, prioridad_ia)` → `(prioridad, origen)` — combina reglas e IA tomando la de mayor severidad.
 
 ### `pandas_analisis.py`
 

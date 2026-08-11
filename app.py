@@ -390,7 +390,10 @@ def pagina_nuevo_reclamo():
         if not es_valido:
             st.error(f"Reclamo no registrado: {motivo}")
             return
-        categoria, prioridad = clasificador.clasificar_comentario(comentario)
+        categoria, prioridad_reglas = clasificador.clasificar_comentario(comentario)
+        with st.spinner("Consultando a la IA por la prioridad…"):
+            prioridad_ia, detalle_ia = ia.sugerir_prioridad_ia(comentario)
+        prioridad, origen_prioridad = ia.combinar_prioridades(prioridad_reglas, prioridad_ia)
         respuesta = plantillas_respuestas.generar_respuesta(categoria)
         id_reclamo = base_datos.insertar_reclamo(
             comentario, categoria, prioridad, calle, numero
@@ -400,6 +403,10 @@ def pagina_nuevo_reclamo():
 
         st.markdown("### Resultado")
         tarjeta_resultado(categoria, prioridad, respuesta)
+        st.caption(f"Prioridad asignada: reglas → **{prioridad_reglas}**, IA → "
+                   f"**{prioridad_ia or 'no disponible'}**. Determinó el valor: **{origen_prioridad}**.")
+        if detalle_ia:
+            st.caption(detalle_ia)
         if guardadas:
             st.success(
                 f"Reclamo registrado correctamente con {guardadas} foto(s)."

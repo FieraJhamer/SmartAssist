@@ -68,3 +68,50 @@ Respondí SOLO con "VALIDO" o "SPAM". No agregues ninguna otra palabra.
         return True, ""
     except Exception:
         return True, ""
+
+
+def sugerir_prioridad_ia(comentario):
+    """Pide a la IA una prioridad sugerida para un reclamo.
+
+    Devuelve (prioridad, detalle) donde prioridad es "ALTA", "MEDIA", "BAJA"
+    o None si la IA no responde algo interpretable (por ejemplo, sin Ollama).
+    """
+    prompt = f"""
+Eres un evaluador de reclamos de la Municipalidad de la Ciudad de La Rioja.
+Dado el siguiente comentario de un ciudadano, indicá qué tan urgente es
+atender el problema.
+
+Comentario:
+"{comentario}"
+
+Considerá riesgo a personas, daño a la propiedad, corte de servicios
+esenciales (agua, luz, gas) y gravedad del problema.
+
+Respondé SOLO con una palabra: ALTA, MEDIA o BAJA.
+"""
+    try:
+        respuesta = consultar_ia(prompt).strip().upper()
+        for nivel in ("ALTA", "MEDIA", "BAJA"):
+            if nivel in respuesta:
+                return nivel, ""
+        return None, "La IA no devolvió un nivel de prioridad válido."
+    except Exception as e:
+        return None, f"Ollama no disponible: {e}"
+
+
+def combinar_prioridades(prioridad_reglas, prioridad_ia):
+    """Combina la prioridad de las reglas con la sugerida por IA.
+
+    Devuelve (prioridad_final, origen) donde origen indica qué fuente
+    determinó el valor ("reglas", "ia" o "ambas"). Se toma siempre el nivel
+    de mayor severidad para no subestimar un reclamo grave.
+    """
+    severidad = {"ALTA": 3, "MEDIA": 2, "BAJA": 1}
+    if prioridad_ia is None:
+        return prioridad_reglas, "reglas"
+
+    if severidad.get(prioridad_ia, 0) > severidad.get(prioridad_reglas, 0):
+        return prioridad_ia, "ia"
+    if severidad.get(prioridad_ia, 0) < severidad.get(prioridad_reglas, 0):
+        return prioridad_reglas, "reglas"
+    return prioridad_reglas, "ambas"
