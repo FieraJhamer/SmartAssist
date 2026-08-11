@@ -376,6 +376,11 @@ def pagina_nuevo_reclamo():
         if not calle.strip() or not numero.strip():
             st.warning("Ingrese la calle y el número de la dirección.")
             return
+        with st.spinner("Verificando que el reclamo sea válido…"):
+            es_valido, motivo = ia.verificar_comentario_ia(comentario)
+        if not es_valido:
+            st.error(f"Reclamo no registrado: {motivo}")
+            return
         categoria, prioridad = clasificador.clasificar_comentario(comentario)
         respuesta = plantillas_respuestas.generar_respuesta(categoria)
         id_reclamo = base_datos.insertar_reclamo(

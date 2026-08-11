@@ -41,5 +41,30 @@ Incluye asunto, saludo, cuerpo y despedida.
     return consultar_ia(prompt)
 
 
-if __name__ == "__main__":
-    print(consultar_ia("Hola, decis hola."))
+def verificar_comentario_ia(comentario):
+    """Analiza si un comentario de reclamo es válido o es spam/sin sentido.
+
+    Devuelve (es_valido, motivo) donde es_valido es un bool y motivo un texto
+    explicativo. Ante cualquier error (por ejemplo, sin Ollama) devuelve
+    (True, "") para no bloquear reclamos legítimos.
+    """
+    prompt = f"""
+Eres un moderador de reclamos de la Municipalidad de la Ciudad de La Rioja.
+Tu tarea es decidir si el siguiente comentario de un ciudadano describe un
+problema municipal válido o si se trata de SPAM, publicidad, caracteres sin
+sentido (gibberish) o mensajes incoherentes.
+
+Comentario del ciudadano:
+"{comentario}"
+
+Respondí SOLO con "VALIDO" o "SPAM". No agregues ninguna otra palabra.
+"""
+    try:
+        respuesta = consultar_ia(prompt).strip().upper()
+        if "VALIDO" in respuesta:
+            return True, ""
+        if "SPAM" in respuesta:
+            return False, "El comentario fue detectado como spam o sin sentido."
+        return True, ""
+    except Exception:
+        return True, ""
