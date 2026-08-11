@@ -10,11 +10,12 @@ def mostrar_historial():
     if not registros:
         print("No hay registros en el historial.")
         return
-    print(f"\n{'ID':<4} {'Comentario':<30} {'Categoría':<15} {'Prioridad':<8} {'Dirección':<22}")
-    print("-" * 85)
+    print(f"\n{'ID':<4} {'Comentario':<30} {'Categoría':<15} {'Prioridad':<8} {'Dirección':<22} {'Fecha':<20}")
+    print("-" * 105)
     for r in registros:
         direccion = f"{r[4] or ''} {r[5] or ''}".strip()
-        print(f"{r[0]:<4} {r[1][:28]:<30} {r[2]:<15} {r[3]:<8} {direccion:<22}")
+        fecha = (r[6] or "").split()[0] if len(r) > 6 else ""
+        print(f"{r[0]:<4} {r[1][:28]:<30} {r[2]:<15} {r[3]:<8} {direccion:<22} {fecha:<20}")
     print()
 
 
@@ -103,11 +104,12 @@ def iniciar():
             if not registros:
                 print(f"No hay registros en la categoría '{categoria}'.")
                 continue
-            print(f"\n{'ID':<4} {'Comentario':<30} {'Prioridad':<8} {'Dirección':<22}")
-            print("-" * 70)
+            print(f"\n{'ID':<4} {'Comentario':<30} {'Prioridad':<8} {'Dirección':<22} {'Fecha':<12}")
+            print("-" * 80)
             for r in registros:
                 direccion = f"{r[4] or ''} {r[5] or ''}".strip()
-                print(f"{r[0]:<4} {r[1][:28]:<30} {r[3]:<8} {direccion:<22}")
+                fecha = (r[6] or "").split()[0] if len(r) > 6 else ""
+                print(f"{r[0]:<4} {r[1][:28]:<30} {r[3]:<8} {direccion:<22} {fecha:<12}")
             print()
 
         elif opcion == "4":
@@ -120,7 +122,7 @@ def iniciar():
             if not registro:
                 print("No se encontró un reclamo con ese ID.")
                 continue
-            print(f"Editando: {registro[1][:40]} | {registro[2]} | {registro[3]} | {registro[4] or ''} {registro[5] or ''}")
+            print(f"Editando: {registro[1][:40]} | {registro[2]} | {registro[3]} | {registro[4] or ''} {registro[5] or ''} | {(registro[6] or '')[:19] if len(registro) > 6 else ''}")
             nuevo_comentario = input("Nuevo comentario (Enter para mantener): ").strip()
             if not nuevo_comentario:
                 nuevo_comentario = registro[1]

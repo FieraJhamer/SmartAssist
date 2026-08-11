@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from datetime import datetime
 
 RUTA_BASE_DATOS = os.path.join(os.path.dirname(__file__), "datos", "reclamos.db")
 
@@ -20,7 +21,8 @@ def crear_tabla():
             categoria TEXT,
             prioridad TEXT,
             calle TEXT,
-            numero TEXT
+            numero TEXT,
+            fecha TEXT
         )
     """)
     columnas = [fila[1] for fila in cursor.execute("PRAGMA table_info(historial_reclamos)")]
@@ -28,6 +30,8 @@ def crear_tabla():
         cursor.execute("ALTER TABLE historial_reclamos ADD COLUMN calle TEXT")
     if "numero" not in columnas:
         cursor.execute("ALTER TABLE historial_reclamos ADD COLUMN numero TEXT")
+    if "fecha" not in columnas:
+        cursor.execute("ALTER TABLE historial_reclamos ADD COLUMN fecha TEXT")
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS reclamo_imagenes(
@@ -43,13 +47,15 @@ def crear_tabla():
     print("Base creada correctamente")
 
 
-def insertar_reclamo(comentario, categoria, prioridad, calle="", numero=""):
+def insertar_reclamo(comentario, categoria, prioridad, calle="", numero="", fecha=None):
     conexion = conectar()
     cursor = conexion.cursor()
+    if fecha is None:
+        fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     cursor.execute("""
-        INSERT INTO historial_reclamos(comentario, categoria, prioridad, calle, numero)
-        VALUES(?, ?, ?, ?, ?)
-    """, (comentario, categoria, prioridad, calle, numero))
+        INSERT INTO historial_reclamos(comentario, categoria, prioridad, calle, numero, fecha)
+        VALUES(?, ?, ?, ?, ?, ?)
+    """, (comentario, categoria, prioridad, calle, numero, fecha))
     conexion.commit()
     id_reclamo = cursor.lastrowid
     conexion.close()

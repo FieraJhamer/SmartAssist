@@ -311,8 +311,9 @@ def dataframe_reclamos():
     registros = base_datos.obtener_todos_reclamos()
     df = pd.DataFrame(
         registros,
-        columns=["ID", "Comentario", "Categoría", "Prioridad", "Calle", "Número"],
+        columns=["ID", "Comentario", "Categoría", "Prioridad", "Calle", "Número", "Fecha"],
     )
+    df["Fecha"] = pd.to_datetime(df["Fecha"], errors="coerce")
     return df
 
 
@@ -395,8 +396,9 @@ def pagina_nuevo_reclamo():
             prioridad_ia, detalle_ia = ia.sugerir_prioridad_ia(comentario)
         prioridad, origen_prioridad = ia.combinar_prioridades(prioridad_reglas, prioridad_ia)
         respuesta = plantillas_respuestas.generar_respuesta(categoria)
+        fecha_ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         id_reclamo = base_datos.insertar_reclamo(
-            comentario, categoria, prioridad, calle, numero
+            comentario, categoria, prioridad, calle, numero, fecha=fecha_ahora
         )
 
         guardadas, rechazadas = storage_imagenes.guardar_imagenes(fotos, id_reclamo)
@@ -409,10 +411,10 @@ def pagina_nuevo_reclamo():
             st.caption(detalle_ia)
         if guardadas:
             st.success(
-                f"Reclamo registrado correctamente con {guardadas} foto(s)."
+                f"Reclamo #{id_reclamo} registrado el {fecha_ahora} con {guardadas} foto(s)."
             )
         else:
-            st.success("Reclamo registrado correctamente en la base de datos.")
+            st.success(f"Reclamo #{id_reclamo} registrado el {fecha_ahora}.")
         for nombre, motivo in rechazadas:
             st.warning(f"{nombre}: {motivo}")
     footer()
