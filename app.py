@@ -8,6 +8,7 @@ import clasificador
 import plantillas_respuestas
 import ia
 import storage_imagenes
+import validaciones
 
 import os
 
@@ -369,13 +370,21 @@ def pagina_nuevo_reclamo():
         analizar = st.button("Clasificar y guardar", type="primary", width="stretch")
 
     if analizar:
+        ok, motivo = validaciones.validar_comentario(comentario)
+        if not ok:
+            st.warning(motivo)
+            return
         comentario = comentario.strip()
-        if not comentario:
-            st.warning("Ingrese un comentario antes de analizar.")
+        ok, motivo = validaciones.validar_calle(calle)
+        if not ok:
+            st.warning(motivo)
             return
-        if not calle.strip() or not numero.strip():
-            st.warning("Ingrese la calle y el número de la dirección.")
+        calle = calle.strip()
+        ok, motivo = validaciones.validar_numero(numero)
+        if not ok:
+            st.warning(motivo)
             return
+        numero = numero.strip()
         with st.spinner("Verificando que el reclamo sea válido…"):
             es_valido, motivo = ia.verificar_comentario_ia(comentario)
         if not es_valido:
@@ -384,7 +393,7 @@ def pagina_nuevo_reclamo():
         categoria, prioridad = clasificador.clasificar_comentario(comentario)
         respuesta = plantillas_respuestas.generar_respuesta(categoria)
         id_reclamo = base_datos.insertar_reclamo(
-            comentario, categoria, prioridad, calle.strip(), numero.strip()
+            comentario, categoria, prioridad, calle, numero
         )
 
         guardadas, rechazadas = storage_imagenes.guardar_imagenes(fotos, id_reclamo)
@@ -476,9 +485,21 @@ def pagina_historial():
         nueva_calle = st.text_input("Calle", value=registro[4] or "", key="edit_calle")
         nuevo_numero = st.text_input("Número", value=registro[5] or "", key="edit_num")
         if st.button("Guardar cambios", key="btn_editar"):
+            ok, motivo = validaciones.validar_comentario(nuevo_comentario)
+            if not ok:
+                st.warning(motivo)
+                return
+            ok, motivo = validaciones.validar_calle(nueva_calle)
+            if not ok:
+                st.warning(motivo)
+                return
+            ok, motivo = validaciones.validar_numero(nuevo_numero)
+            if not ok:
+                st.warning(motivo)
+                return
             base_datos.actualizar_reclamo(
                 int(id_editar),
-                nuevo_comentario,
+                nuevo_comentario.strip(),
                 nueva_categoria,
                 nueva_prioridad,
                 nueva_calle.strip(),

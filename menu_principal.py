@@ -1,6 +1,7 @@
 import base_datos
 import clasificador
 import plantillas_respuestas
+import validaciones
 from datetime import datetime
 
 
@@ -64,14 +65,20 @@ def iniciar():
 
         if opcion == "1":
             comentario = input("\nIngrese el comentario: ").strip()
-            if not comentario:
-                print("Comentario vacío, intente de nuevo.")
+            ok, motivo = validaciones.validar_comentario(comentario)
+            if not ok:
+                print(motivo)
                 continue
 
             calle = input("Ingrese la calle: ").strip()
+            ok, motivo = validaciones.validar_calle(calle)
+            if not ok:
+                print(motivo)
+                continue
             numero = input("Ingrese el número: ").strip()
-            if not calle or not numero:
-                print("Debe ingresar calle y número, intente de nuevo.")
+            ok, motivo = validaciones.validar_numero(numero)
+            if not ok:
+                print(motivo)
                 continue
 
             categoria, prioridad = clasificador.clasificar_comentario(comentario)
@@ -120,15 +127,35 @@ def iniciar():
             nueva_categoria = input(f"Nueva categoría (Enter para mantener '{registro[2]}'): ").strip().upper()
             if not nueva_categoria:
                 nueva_categoria = registro[2]
+            else:
+                ok, motivo = validaciones.validar_categoria(nueva_categoria)
+                if not ok:
+                    print(motivo)
+                    continue
             nueva_prioridad = input(f"Nueva prioridad (Enter para mantener '{registro[3]}'): ").strip().upper()
             if not nueva_prioridad:
                 nueva_prioridad = registro[3]
+            else:
+                ok, motivo = validaciones.validar_prioridad(nueva_prioridad)
+                if not ok:
+                    print(motivo)
+                    continue
             nueva_calle = input(f"Nueva calle (Enter para mantener '{registro[4] or ''}'): ").strip()
             if not nueva_calle:
                 nueva_calle = registro[4] or ""
+            else:
+                ok, motivo = validaciones.validar_calle(nueva_calle)
+                if not ok:
+                    print(motivo)
+                    continue
             nuevo_numero = input(f"Nuevo número (Enter para mantener '{registro[5] or ''}'): ").strip()
             if not nuevo_numero:
                 nuevo_numero = registro[5] or ""
+            else:
+                ok, motivo = validaciones.validar_numero(nuevo_numero)
+                if not ok:
+                    print(motivo)
+                    continue
             base_datos.actualizar_reclamo(
                 int(id_editar), nuevo_comentario, nueva_categoria, nueva_prioridad,
                 nueva_calle, nuevo_numero,
