@@ -1,10 +1,8 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from urllib.parse import quote
 
 import streamlit as st
 import pandas as pd
-
-from streamlit_cookies_manager import EncryptedCookieManager
 
 import base_datos
 import clasificador
@@ -663,57 +661,58 @@ def _navegar_a(nombre):
     st.session_state.pagina_actual = nombre
 
 
-_cookie_manager_por_corrida = None
-
-
-def _obtener_cookie_manager():
-    """Crea (una vez por corrida) el manager de cookies de sesión.
-
-    No se usa @st.cache_* porque el manager ejecuta un widget/componente
-    para leer las cookies del navegador; cacharlo dispararía la advertencia
-    CachedWidgetWarning y además impediría resincronizar cada rerun.
-    """
-    global _cookie_manager_por_corrida
-    if _cookie_manager_por_corrida is None:
-        cm = EncryptedCookieManager(password=autenticacion.SESION_SECRETO)
-        cm._cookie_manager._default_expiry = datetime.now() + timedelta(
-            seconds=autenticacion.SESSION_SEGUNDOS
-        )
-        _cookie_manager_por_corrida = cm
-    return _cookie_manager_por_corrida
-
-
-def _leer_sesion_cookie():
-    """Devuelve el usuario almacenado en la cookie de sesión, o None."""
-    cm = _obtener_cookie_manager()
-    if not cm.ready():
+def _leer_sesion_token():
+    """Devuelve el usuario autenticado desde el token en la URL, o None."""
+    try:
+        token = st.query_params.get("sesion_admin", [None])
+    except Exception:
         return None
-    usuario = cm.get("sesion_admin")
+    if isinstance(token, list):
+        token = token[0] if token else None
+    if not token:
+        return None
+    usuario = autenticacion.verificar_token_sesion(token)
     if usuario and base_datos.existe_usuario(usuario):
         return usuario
     return None
 
 
-def _guardar_sesion_cookie(usuario):
-    cm = _obtener_cookie_manager()
-    cm["sesion_admin"] = usuario
-    cm.save()
+def _guardar_sesion_token(usuario):
+    st.query_params["sesion_admin"] = autenticacion.crear_token_sesion(usuario)
 
 
-def _limpiar_sesion_cookie():
-    cm = _obtener_cookie_manager()
-    if cm.ready():
-        try:
-            del cm["sesion_admin"]
-            cm.save()
-        except Exception:
-            pass
+def _limpiar_sesion_token():
+    try:
+        del st.query_params["sesion_admin"]
+    except Exception:
+        pass
 
 
 def _cerrar_sesion():
     st.session_state.logueado = False
     st.session_state.pagina_actual = "Nuevo reclamo"
-    _limpiar_sesion_cookie()
+    _limpiar_sesion_token()
+
+
+def _login_callback():
+    usuario = st.session_state.get("login_usuario", "")
+    clave = st.session_state.get("login_clave", "")
+    if autenticacion.autenticar(usuario, clave):
+        st.session_state.logueado = True
+        st.session_state.usuario = usuario.strip()
+        st.session_state.pagina_actual = "Historial"
+        try:
+            _guardar_sesion_token(usuario.strip())
+        except Exception:
+            pass
+        login_error = False
+    else:
+        login_error = True
+    st.session_state.login_error = login_error
+
+
+def _logout_callback():
+    _cerrar_sesion()
 
 
 def pagina_administradores():
@@ -769,9 +768,6 @@ def pagina_administradores():
     footer()
 
 def main():
-    global _cookie_manager_por_corrida
-    _cookie_manager_por_corrida = None
-
     base_datos.crear_tabla()
     autenticacion.crear_admin_inicial()
     inyectar_css()
@@ -781,15 +777,15 @@ def main():
     if "pagina_actual" not in st.session_state:
         st.session_state.pagina_actual = "Nuevo reclamo"
 
-    # Restaurar sesión desde la cookie (persiste al recargar la página)
+    # Restaurar sesión desde el token en la URL (persiste al recargar la página)
     if not st.session_state.logueado:
         try:
-            cookie_usuario = _leer_sesion_cookie()
+            token_usuario = _leer_sesion_token()
         except Exception:
-            cookie_usuario = None
-        if cookie_usuario:
+            token_usuario = None
+        if token_usuario:
             st.session_state.logueado = True
-            st.session_state.usuario = cookie_usuario
+            st.session_state.usuario = token_usuario
             st.session_state.pagina_actual = "Historial"
 
     if os.path.exists(logo_municipio):
@@ -813,25 +809,23 @@ def main():
     # Login de administrador
     if not st.session_state.logueado:
         st.sidebar.markdown("### Acceso administrador")
-        usuario = st.sidebar.text_input("Usuario", key="login_usuario")
-        clave = st.sidebar.text_input("Contraseña", type="password", key="login_clave")
-        if st.sidebar.button("Ingresar", type="primary", width="stretch", key="btn_login"):
-            if autenticacion.autenticar(usuario, clave):
-                st.session_state.logueado = True
-                st.session_state.usuario = usuario.strip()
-                st.session_state.pagina_actual = "Historial"
-                try:
-                    _guardar_sesion_cookie(usuario.strip())
-                except Exception:
-                    pass
-                st.rerun()
-            else:
-                st.sidebar.error("Usuario o contraseña incorrectos.")
+        st.sidebar.text_input("Usuario", key="login_usuario")
+        st.sidebar.text_input("Contraseña", type="password", key="login_clave")
+        if st.sidebar.button(
+            "Ingresar", type="primary", width="stretch", key="btn_login",
+            on_click=_login_callback,
+        ):
+            pass
+        if st.session_state.get("login_error"):
+            st.sidebar.error("Usuario o contraseña incorrectos.")
+            st.session_state.login_error = False
     else:
         st.sidebar.markdown(f"#### Sesión: **{st.session_state.get('usuario', 'admin')}**")
-        if st.sidebar.button("Cerrar sesión", width="stretch", key="btn_logout"):
-            _cerrar_sesion()
-            st.rerun()
+        if st.sidebar.button(
+            "Cerrar sesión", width="stretch", key="btn_logout",
+            on_click=_logout_callback,
+        ):
+            pass
     st.sidebar.markdown("---")
 
     # Secciones (los usuarios sin sesión solo ven "Nuevo reclamo")

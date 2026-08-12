@@ -81,7 +81,7 @@ streamlit run app.py
 - **Ciudadano (sin login)** — ve solo la sección **Nuevo reclamo** para reportar un problema. No necesita registrarse.
 - **Administrador (con login)** — ve todas las secciones. Iniciá sesión desde el sidebar. Las contraseñas se guardan **hasheadas con bcrypt** en la base de datos `datos/reclamos.db` (tabla `usuarios`), nunca en texto plano. Los administradores se gestionan en la sección **Administradores** (agregar nuevos admins o eliminarlos).
 
-> **Sesión persistente por cookies:** al iniciar sesión se guarda una cookie **cifrada** (8 horas por defecto, configurable con `SMARTASSIST_SESSION_HORAS`), así no tenés que volver a loguearte al recargar la página. Al cerrar sesión, o al borrar la cookie, se invalida. El secreto de cifrado se define con `SMARTASSIST_SESSION_SECRET`.
+> **Sesión persistente en la URL:** al iniciar sesión se guarda un **token firmado** (HMAC-SHA256 con `SMARTASSIST_SESSION_SECRET`) en los query params de la URL, con una expiración de `SMARTASSIST_SESSION_HORAS` (8 por defecto). Así la sesión sobrevive al recargar o cerrar la página sin depender de cookies a nivel de navegador.
 
 **Configuración del administrador inicial (`.env`):**
 
@@ -250,9 +250,9 @@ Backend de login con contraseñas hasheadas:
 - `usuario_existe(usuario)` → `bool` — indica si el usuario ya está registrado.
 - `crear_usuario(usuario, clave)` — crea un usuario nuevo con su contraseña hasheada.
 
-Usa `python-dotenv` para cargar `.env` (si existe) al importar, dando prioridad a las variables de entorno del sistema. Los usuarios se guardan en la tabla `usuarios` de `datos/reclamos.db` con la clave **hasheada con bcrypt** (nunca en texto plano). Define las constantes globales `SESSION_HORAS` (duración en horas de la sesión, por defecto 8) y `SESION_SECRETO` (clave para cifrar las cookies).
+Usa `python-dotenv` para cargar `.env` (si existe) al importar, dando prioridad a las variables de entorno del sistema. Los usuarios se guardan en la tabla `usuarios` de `datos/reclamos.db` con la clave **hasheada con bcrypt** (nunca en texto plano). Define las constantes globales `SESSION_HORAS` (duración en horas de la sesión, por defecto 8) y `SESION_SECRETO` (secreto para firmar el token de sesión).
 
-La **persistencia de sesión** en la web se maneja en `app.py` con `EncryptedCookieManager` (del paquete `streamlit-cookies-manager`): guarda, lee y limpia una cookie cifrada `sesion_admin` con expiración de `SESSION_HORAS`.
+La **persistencia de sesión** en la web se maneja en `app.py` mediante `st.query_params`: al loguear se genera un **token firmado** (`crear_token_sesion`) y se guarda en la URL; al recargar se valida (`verificar_token_sesion`) y se restaura la sesión. Si el token expiró o no es válido, se pide login de nuevo.
 
 ### `cliente_api.py`
 
