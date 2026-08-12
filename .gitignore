@@ -15,8 +15,7 @@ storage/
 
 # Entornos y secretos
 .env
-.env.*
-*.local
+!.env.example
 
 # Sistemas operativos
 .DS_Store

@@ -44,6 +44,10 @@ source .venv/bin/activate     # Linux / macOS
 
 # 2. Instalar dependencias
 pip install -r requirements.txt
+
+# 3. Configurar credenciales (opcional, con valores por defecto no hace falta)
+cp .env.example .env
+# editar .env con usuario y contraseña del administrador
 ```
 
 ### 🤖 Configurar Ollama (para la IA)
@@ -75,13 +79,25 @@ streamlit run app.py
 **Acceso por roles:**
 
 - **Ciudadano (sin login)** — ve solo la sección **Nuevo reclamo** para reportar un problema. No necesita registrarse.
-- **Administrador (con login)** — ve todas las secciones. Iniciá sesión desde el sidebar (usuario `admin`, contraseña `admin123` por defecto; se pueden cambiar con las variables de entorno `SMARTASSIST_ADMIN_USUARIO` y `SMARTASSIST_ADMIN_CLAVE`).
+- **Administrador (con login)** — ve todas las secciones. Iniciá sesión desde el sidebar. Las contraseñas se guardan **hasheadas con bcrypt** en la base de datos `datos/reclamos.db` (tabla `usuarios`), nunca en texto plano. Los administradores se gestionan en la sección **Administradores** (agregar nuevos admins o eliminarlos).
+
+**Configuración del administrador inicial (`.env`):**
+
+1. Copiá `.env.example` → `.env`.
+2. Editá usuario y contraseña **antes de la primera ejecución**:
+   ```
+   SMARTASSIST_ADMIN_USUARIO=admin
+   SMARTASSIST_ADMIN_CLAVE=tu_clave_segura
+   ```
+3. `streamlit run app.py`. El admin se crea **solo la primera vez**; si ya existe en la base (`.db`) y querés regenerarlo, eliminá ese usuario desde la sección Administradores o borrá la fila en la tabla `usuarios`.
 
 Secciones (administrador):
 
 - **Nuevo reclamo** — ingresá el comentario del ciudadano y el sistema lo clasifica. Muestra una **vista previa del mapa** de la dirección apenas cargás la calle.
 - **Historial** — consultá, filtrá, editá, eliminá, analizá con IA y **verificá la ubicación aproximada en Google Maps** de cada reclamo.
 - **Estadísticas** — métricas y gráficos por categoría y prioridad.
+- **Análisis Inteligente** — generá informe con IA, correo a gerencia y chat libre.
+- **Administradores** — creá o eliminá usuarios con acceso al sistema.
 - **Análisis Inteligente** — generá informe con IA, correo a gerencia y chat libre.
 
 ### Consola CLI
@@ -184,7 +200,16 @@ Tabla `reclamo_imagenes` (fotos por reclamo):
 | `reclamo_id` | INTEGER (ref. `historial_reclamos.id`) |
 | `ruta` | TEXT |
 
-Funciones: `crear_tabla()`, `insertar_reclamo(..., fecha=None)` (devuelve el `id` creado; si `fecha` se omite registra la actual), `insertar_imagen()`, `obtener_imagenes_reclamo()`, `obtener_todos_reclamos()`, `obtener_reclamo_por_id()`, `actualizar_reclamo()`, `eliminar_reclamo()`, `obtener_reclamos_por_categoria()`, `contar_total_reclamos()`, `contar_reclamos_por_categoria()`, `obtener_reclamos_por_prioridad()`. Para bases existentes, `crear_tabla()` agrega la columna `fecha` con un `ALTER TABLE` automático.
+Tabla `usuarios` (login de administradores):
+
+| Columna | Tipo |
+|---------|------|
+| `id` | INTEGER PRIMARY KEY AUTOINCREMENT |
+| `usuario` | TEXT UNIQUE NOT NULL |
+| `clave_hash` | TEXT (hash bcrypt) |
+| `creado_en` | TEXT |
+
+Funciones: `crear_tabla()`, `insertar_reclamo(..., fecha=None)` (devuelve el `id` creado; si `fecha` se omite registra la actual), `insertar_imagen()`, `obtener_imagenes_reclamo()`, `obtener_todos_reclamos()`, `obtener_reclamo_por_id()`, `actualizar_reclamo()`, `eliminar_reclamo()`, `obtener_reclamos_por_categoria()`, `contar_total_reclamos()`, `contar_reclamos_por_categoria()`, `obtener_reclamos_por_prioridad()`, `crear_usuario()`, `obtener_clave_hash()`, `existe_usuario()`, `eliminar_usuario()`, `obtener_usuarios()`. Para bases existentes, `crear_tabla()` agrega las columnas/tablas faltantes con `ALTER TABLE` / `CREATE TABLE` automáticos.
 
 ### `storage_imagenes.py`
 
@@ -212,9 +237,16 @@ Lee la base de datos y muestra las estadísticas con Pandas.
 
 ### `autenticacion.py`
 
-- `autenticar(usuario, clave)` → `bool`
+Backend de login con contraseñas hasheadas:
 
-Controla el acceso de administrador en la web. Las credenciales se leen de las variables de entorno `SMARTASSIST_ADMIN_USUARIO` y `SMARTASSIST_ADMIN_CLAVE` (por defecto `admin` / `admin123`, solo para desarrollo).
+- `hash_clave(clave)` → `str` — genera un hash **bcrypt** para una contraseña.
+- `verificar_clave(clave, clave_hash)` → `bool` — compara la contraseña en claro contra su hash.
+- `crear_admin_inicial()` → `bool` — crea el administrador inicial (si no existe) a partir de las variables de entorno.
+- `autenticar(usuario, clave)` → `bool` — valida las credenciales contra la base de datos.
+- `usuario_existe(usuario)` → `bool` — indica si el usuario ya está registrado.
+- `crear_usuario(usuario, clave)` — crea un usuario nuevo con su contraseña hasheada.
+
+Usa `python-dotenv` para cargar `.env` (si existe) al importar, dando prioridad a las variables de entorno del sistema. Los usuarios se guardan en la tabla `usuarios` de `datos/reclamos.db` con la clave **hasheada con bcrypt** (nunca en texto plano).
 
 ### `cliente_api.py`
 

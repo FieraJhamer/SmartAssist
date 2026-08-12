@@ -42,6 +42,15 @@ def crear_tabla():
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS usuarios(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario TEXT UNIQUE NOT NULL,
+            clave_hash TEXT NOT NULL,
+            creado_en TEXT
+        )
+    """)
+
     conexion.commit()
     conexion.close()
     print("Base creada correctamente")
@@ -175,6 +184,58 @@ def obtener_reclamos_por_prioridad(prioridad):
     cursor.execute(
         "SELECT * FROM historial_reclamos WHERE prioridad = ?", (prioridad,)
     )
+    registros = cursor.fetchall()
+    conexion.close()
+    return registros
+
+
+def crear_usuario(usuario, clave_hash):
+    conexion = conectar()
+    cursor = conexion.cursor()
+    fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute(
+        """
+        INSERT OR REPLACE INTO usuarios(usuario, clave_hash, creado_en)
+        VALUES(?, ?, ?)
+        """,
+        (usuario, clave_hash, fecha),
+    )
+    conexion.commit()
+    conexion.close()
+
+
+def obtener_clave_hash(usuario):
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute(
+        "SELECT clave_hash FROM usuarios WHERE usuario = ?", (usuario,)
+    )
+    fila = cursor.fetchone()
+    conexion.close()
+    return fila[0] if fila else None
+
+
+def existe_usuario(usuario):
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("SELECT 1 FROM usuarios WHERE usuario = ?", (usuario,))
+    existe = cursor.fetchone() is not None
+    conexion.close()
+    return existe
+
+
+def eliminar_usuario(usuario):
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("DELETE FROM usuarios WHERE usuario = ?", (usuario,))
+    conexion.commit()
+    conexion.close()
+
+
+def obtener_usuarios():
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("SELECT usuario, creado_en FROM usuarios ORDER BY usuario")
     registros = cursor.fetchall()
     conexion.close()
     return registros
