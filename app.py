@@ -1,8 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import quote
 
 import streamlit as st
 import pandas as pd
+
+from streamlit_cookies_manager import EncryptedCookieManager
 
 import base_datos
 import clasificador
@@ -661,6 +663,59 @@ def _navegar_a(nombre):
     st.session_state.pagina_actual = nombre
 
 
+_cookie_manager_por_corrida = None
+
+
+def _obtener_cookie_manager():
+    """Crea (una vez por corrida) el manager de cookies de sesión.
+
+    No se usa @st.cache_* porque el manager ejecuta un widget/componente
+    para leer las cookies del navegador; cacharlo dispararía la advertencia
+    CachedWidgetWarning y además impediría resincronizar cada rerun.
+    """
+    global _cookie_manager_por_corrida
+    if _cookie_manager_por_corrida is None:
+        cm = EncryptedCookieManager(password=autenticacion.SESION_SECRETO)
+        cm._cookie_manager._default_expiry = datetime.now() + timedelta(
+            seconds=autenticacion.SESSION_SEGUNDOS
+        )
+        _cookie_manager_por_corrida = cm
+    return _cookie_manager_por_corrida
+
+
+def _leer_sesion_cookie():
+    """Devuelve el usuario almacenado en la cookie de sesión, o None."""
+    cm = _obtener_cookie_manager()
+    if not cm.ready():
+        return None
+    usuario = cm.get("sesion_admin")
+    if usuario and base_datos.existe_usuario(usuario):
+        return usuario
+    return None
+
+
+def _guardar_sesion_cookie(usuario):
+    cm = _obtener_cookie_manager()
+    cm["sesion_admin"] = usuario
+    cm.save()
+
+
+def _limpiar_sesion_cookie():
+    cm = _obtener_cookie_manager()
+    if cm.ready():
+        try:
+            del cm["sesion_admin"]
+            cm.save()
+        except Exception:
+            pass
+
+
+def _cerrar_sesion():
+    st.session_state.logueado = False
+    st.session_state.pagina_actual = "Nuevo reclamo"
+    _limpiar_sesion_cookie()
+
+
 def pagina_administradores():
     encabezado("Administradores", "Gestioná los usuarios con acceso al sistema")
 
@@ -720,6 +775,9 @@ def _cerrar_sesion():
 
 
 def main():
+    global _cookie_manager_por_corrida
+    _cookie_manager_por_corrida = None
+
     base_datos.crear_tabla()
     autenticacion.crear_admin_inicial()
     inyectar_css()
@@ -728,6 +786,17 @@ def main():
         st.session_state.logueado = False
     if "pagina_actual" not in st.session_state:
         st.session_state.pagina_actual = "Nuevo reclamo"
+
+    # Restaurar sesión desde la cookie (persiste al recargar la página)
+    if not st.session_state.logueado:
+        try:
+            cookie_usuario = _leer_sesion_cookie()
+        except Exception:
+            cookie_usuario = None
+        if cookie_usuario:
+            st.session_state.logueado = True
+            st.session_state.usuario = cookie_usuario
+            st.session_state.pagina_actual = "Historial"
 
     if os.path.exists(logo_municipio):
         with open(logo_municipio, "rb") as f:
@@ -757,6 +826,10 @@ def main():
                 st.session_state.logueado = True
                 st.session_state.usuario = usuario.strip()
                 st.session_state.pagina_actual = "Historial"
+                try:
+                    _guardar_sesion_cookie(usuario.strip())
+                except Exception:
+                    pass
                 st.rerun()
             else:
                 st.sidebar.error("Usuario o contraseña incorrectos.")

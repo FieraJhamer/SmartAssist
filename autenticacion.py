@@ -10,6 +10,12 @@ load_dotenv()
 ADMIN_USUARIO = os.environ.get("SMARTASSIST_ADMIN_USUARIO", "admin")
 ADMIN_CLAVE = os.environ.get("SMARTASSIST_ADMIN_CLAVE", "admin123")
 
+# Duración de la sesión por cookies (en horas y segundos)
+SESSION_HORAS = int(os.environ.get("SMARTASSIST_SESSION_HORAS", "8"))
+SESSION_SEGUNDOS = SESSION_HORAS * 3600
+# Secreto para cifrar las cookies de sesión (idealmente distinto en producción)
+SESION_SECRETO = os.environ.get("SMARTASSIST_SESSION_SECRET", "clave-cookies-dev")
+
 
 def hash_clave(clave):
     """Genera un hash bcrypt para una contraseña."""

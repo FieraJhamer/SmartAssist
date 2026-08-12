@@ -81,13 +81,17 @@ streamlit run app.py
 - **Ciudadano (sin login)** — ve solo la sección **Nuevo reclamo** para reportar un problema. No necesita registrarse.
 - **Administrador (con login)** — ve todas las secciones. Iniciá sesión desde el sidebar. Las contraseñas se guardan **hasheadas con bcrypt** en la base de datos `datos/reclamos.db` (tabla `usuarios`), nunca en texto plano. Los administradores se gestionan en la sección **Administradores** (agregar nuevos admins o eliminarlos).
 
+> **Sesión persistente por cookies:** al iniciar sesión se guarda una cookie **cifrada** (8 horas por defecto, configurable con `SMARTASSIST_SESSION_HORAS`), así no tenés que volver a loguearte al recargar la página. Al cerrar sesión, o al borrar la cookie, se invalida. El secreto de cifrado se define con `SMARTASSIST_SESSION_SECRET`.
+
 **Configuración del administrador inicial (`.env`):**
 
 1. Copiá `.env.example` → `.env`.
-2. Editá usuario y contraseña **antes de la primera ejecución**:
+2. Editá usuario, contraseña y opciones de sesión **antes de la primera ejecución**:
    ```
    SMARTASSIST_ADMIN_USUARIO=admin
    SMARTASSIST_ADMIN_CLAVE=tu_clave_segura
+   SMARTASSIST_SESSION_HORAS=8
+   SMARTASSIST_SESSION_SECRET=un_secreto_largo_y_aleatorio
    ```
 3. `streamlit run app.py`. El admin se crea **solo la primera vez**; si ya existe en la base (`.db`) y querés regenerarlo, eliminá ese usuario desde la sección Administradores o borrá la fila en la tabla `usuarios`.
 
@@ -246,7 +250,9 @@ Backend de login con contraseñas hasheadas:
 - `usuario_existe(usuario)` → `bool` — indica si el usuario ya está registrado.
 - `crear_usuario(usuario, clave)` — crea un usuario nuevo con su contraseña hasheada.
 
-Usa `python-dotenv` para cargar `.env` (si existe) al importar, dando prioridad a las variables de entorno del sistema. Los usuarios se guardan en la tabla `usuarios` de `datos/reclamos.db` con la clave **hasheada con bcrypt** (nunca en texto plano).
+Usa `python-dotenv` para cargar `.env` (si existe) al importar, dando prioridad a las variables de entorno del sistema. Los usuarios se guardan en la tabla `usuarios` de `datos/reclamos.db` con la clave **hasheada con bcrypt** (nunca en texto plano). Define las constantes globales `SESSION_HORAS` (duración en horas de la sesión, por defecto 8) y `SESION_SECRETO` (clave para cifrar las cookies).
+
+La **persistencia de sesión** en la web se maneja en `app.py` con `EncryptedCookieManager` (del paquete `streamlit-cookies-manager`): guarda, lee y limpia una cookie cifrada `sesion_admin` con expiración de `SESSION_HORAS`.
 
 ### `cliente_api.py`
 
