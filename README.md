@@ -72,7 +72,12 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Secciones:
+**Acceso por roles:**
+
+- **Ciudadano (sin login)** — ve solo la sección **Nuevo reclamo** para reportar un problema. No necesita registrarse.
+- **Administrador (con login)** — ve todas las secciones. Iniciá sesión desde el sidebar (usuario `admin`, contraseña `admin123` por defecto; se pueden cambiar con las variables de entorno `SMARTASSIST_ADMIN_USUARIO` y `SMARTASSIST_ADMIN_CLAVE`).
+
+Secciones (administrador):
 
 - **Nuevo reclamo** — ingresá el comentario del ciudadano y el sistema lo clasifica. Muestra una **vista previa del mapa** de la dirección apenas cargás la calle.
 - **Historial** — consultá, filtrá, editá, eliminá, analizá con IA y **verificá la ubicación aproximada en Google Maps** de cada reclamo.
@@ -110,6 +115,8 @@ SmartAssist/
 ├── plantillas_respuestas.py  # Respuestas automáticas por categoría
 ├── base_datos.py             # Capa de persistencia SQLite (CRUD)
 ├── storage_imagenes.py       # Almacenamiento y validación de fotos de reclamos
+├── autenticacion.py          # Autenticación de administradores (login)
+├── validaciones.py           # Validación de datos de entrada (web y CLI)
 ├── ia.py                     # Integración con Ollama (IA local)
 ├── pandas_analisis.py        # Estadísticas con Pandas
 ├── cliente_api.py            # Cliente HTTP para API externa (no integrado)
@@ -202,6 +209,12 @@ Almacena las fotos de los reclamos en `storage/fotos/{id_reclamo}/` (archivos) y
 ### `pandas_analisis.py`
 
 Lee la base de datos y muestra las estadísticas con Pandas.
+
+### `autenticacion.py`
+
+- `autenticar(usuario, clave)` → `bool`
+
+Controla el acceso de administrador en la web. Las credenciales se leen de las variables de entorno `SMARTASSIST_ADMIN_USUARIO` y `SMARTASSIST_ADMIN_CLAVE` (por defecto `admin` / `admin123`, solo para desarrollo).
 
 ### `cliente_api.py`
 

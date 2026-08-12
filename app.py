@@ -10,6 +10,7 @@ import plantillas_respuestas
 import ia
 import storage_imagenes
 import validaciones
+import autenticacion
 
 import os
 
@@ -364,6 +365,8 @@ def pagina_nuevo_reclamo():
 
     st.markdown("## Nuevo reclamo")
     st.caption("Contanos qué está pasando y el sistema lo clasificará por categoría y prioridad.")
+    if not st.session_state.logueado:
+        st.caption("Las secciones de Historial, Estadísticas y Análisis Inteligente requieren acceso de administrador.")
 
     comentario = st.text_area(
         "Comentario del usuario",
@@ -658,9 +661,19 @@ def _navegar_a(nombre):
     st.session_state.pagina_actual = nombre
 
 
+def _cerrar_sesion():
+    st.session_state.logueado = False
+    st.session_state.pagina_actual = "Nuevo reclamo"
+
+
 def main():
     base_datos.crear_tabla()
     inyectar_css()
+
+    if "logueado" not in st.session_state:
+        st.session_state.logueado = False
+    if "pagina_actual" not in st.session_state:
+        st.session_state.pagina_actual = "Nuevo reclamo"
 
     if os.path.exists(logo_municipio):
         with open(logo_municipio, "rb") as f:
@@ -680,11 +693,31 @@ def main():
         st.sidebar.markdown("#### Reclamos Ciudadanos")
     st.sidebar.markdown("---")
 
-    if "pagina_actual" not in st.session_state:
-        st.session_state.pagina_actual = "Nuevo reclamo"
+    # Login de administrador
+    if not st.session_state.logueado:
+        st.sidebar.markdown("### Acceso administrador")
+        usuario = st.sidebar.text_input("Usuario", key="login_usuario")
+        clave = st.sidebar.text_input("Contraseña", type="password", key="login_clave")
+        if st.sidebar.button("Ingresar", type="primary", width="stretch", key="btn_login"):
+            if autenticacion.autenticar(usuario, clave):
+                st.session_state.logueado = True
+                st.session_state.usuario = usuario.strip()
+                st.session_state.pagina_actual = "Historial"
+                st.rerun()
+            else:
+                st.sidebar.error("Usuario o contraseña incorrectos.")
+    else:
+        st.sidebar.markdown(f"#### Sesión: **{st.session_state.get('usuario', 'admin')}**")
+        if st.sidebar.button("Cerrar sesión", width="stretch", key="btn_logout"):
+            _cerrar_sesion()
+            st.rerun()
+    st.sidebar.markdown("---")
 
-    # Secciones
-    for nombre in ["Nuevo reclamo", "Historial", "Estadísticas", "Análisis Inteligente"]:
+    # Secciones (los usuarios sin sesión solo ven "Nuevo reclamo")
+    secciones = ["Nuevo reclamo"] if not st.session_state.logueado else [
+        "Nuevo reclamo", "Historial", "Estadísticas", "Análisis Inteligente"
+    ]
+    for nombre in secciones:
         activo = st.session_state.pagina_actual == nombre
         st.sidebar.button(
             nombre,
@@ -694,6 +727,9 @@ def main():
             on_click=_navegar_a,
             args=(nombre,),
         )
+
+    if not st.session_state.logueado and st.session_state.pagina_actual != "Nuevo reclamo":
+        st.session_state.pagina_actual = "Nuevo reclamo"
 
     st.sidebar.markdown("---")
     st.sidebar.markdown("**Categorías del municipio**")
