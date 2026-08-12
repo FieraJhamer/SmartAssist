@@ -768,12 +768,6 @@ def pagina_administradores():
                 st.success(f"Administrador '{id_borrar}' eliminado.")
     footer()
 
-
-def _cerrar_sesion():
-    st.session_state.logueado = False
-    st.session_state.pagina_actual = "Nuevo reclamo"
-
-
 def main():
     global _cookie_manager_por_corrida
     _cookie_manager_por_corrida = None
