@@ -74,8 +74,8 @@ streamlit run app.py
 
 Secciones:
 
-- **Nuevo reclamo** — ingresá el comentario del ciudadano y el sistema lo clasifica.
-- **Historial** — consultá, filtrá, editá, eliminá y analizá con IA cada reclamo.
+- **Nuevo reclamo** — ingresá el comentario del ciudadano y el sistema lo clasifica. Muestra una **vista previa del mapa** de la dirección apenas cargás la calle.
+- **Historial** — consultá, filtrá, editá, eliminá, analizá con IA y **verificá la ubicación aproximada en Google Maps** de cada reclamo.
 - **Estadísticas** — métricas y gráficos por categoría y prioridad.
 - **Análisis Inteligente** — generá informe con IA, correo a gerencia y chat libre.
 
@@ -129,6 +129,9 @@ SmartAssist/
 ### `app.py`
 
 Interfaz web con Streamlit. Configura `layout="wide"`, inyecta el CSS de la marca (paleta La Rioja, Montserrat + Plus Jakarta Sans) y organiza la navegación en el sidebar con el logo del municipio.
+
+- `url_mapa_reclamo(calle, numero)` → URL del embed de Google Maps para la dirección del reclamo (aproximada, sin API key).
+- `mostrar_mapa(calle, numero, altura)` → renderiza el mapa dentro de un marco con `st.iframe`.
 
 ### `motor_clasificacion.py`
 

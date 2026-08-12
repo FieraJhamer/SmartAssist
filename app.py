@@ -1,4 +1,5 @@
 from datetime import datetime
+from urllib.parse import quote
 
 import streamlit as st
 import pandas as pd
@@ -324,6 +325,24 @@ def etiqueta_reclamo(fila):
     return f"#{int(fila['ID'])} · {comentario}"
 
 
+def url_mapa_reclamo(calle, numero):
+    direccion = f"{calle} {numero}".strip()
+    if not direccion:
+        return None
+    consulta = f"{direccion}, La Rioja, Argentina"
+    return "https://maps.google.com/maps?q=" + quote(consulta) + "&output=embed&z=17"
+
+
+def mostrar_mapa(calle, numero, altura=360):
+    url = url_mapa_reclamo(calle, numero)
+    if not url:
+        st.info("Este reclamo no tiene dirección cargada.")
+        return
+    st.caption(f"{calle} {numero}".strip() + " · La Rioja, Argentina")
+    with st.container(border=True):
+        st.iframe(url, width="stretch", height=altura)
+
+
 def estadisticas_a_texto():
     registros = base_datos.obtener_todos_reclamos()
     if not registros:
@@ -365,6 +384,11 @@ def pagina_nuevo_reclamo():
         accept_multiple_files=True,
         help=f"Máximo {storage_imagenes.TAMANIO_MAXIMO_MB} MB por foto.",
     )
+
+    if calle.strip():
+        with st.expander(f"Ubicación (aproximada) — {calle.strip()} {numero.strip()}",
+                          expanded=True):
+            mostrar_mapa(calle.strip(), numero.strip(), altura=280)
 
     col_btn, _ = st.columns([1, 3])
     with col_btn:
@@ -468,6 +492,14 @@ def pagina_historial():
                 st.image(ruta, width="stretch")
     else:
         st.info("Este reclamo no tiene fotos adjuntas.")
+
+    st.markdown("## Ubicación (aproximada)")
+    st.caption("Mapa del lugar indicado en el reclamo seleccionado.")
+    registro_ubic = base_datos.obtener_reclamo_por_id(int(id_fotos))
+    if registro_ubic and (registro_ubic[4] or registro_ubic[5]):
+        mostrar_mapa(registro_ubic[4] or "", registro_ubic[5] or "", altura=360)
+    else:
+        st.info("Este reclamo no tiene dirección cargada.")
 
     st.markdown("## Editar reclamo")
     id_editar = st.selectbox(

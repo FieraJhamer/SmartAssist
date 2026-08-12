@@ -45,8 +45,7 @@ def verificar_comentario_ia(comentario):
     """Analiza si un comentario de reclamo es válido o es spam/sin sentido.
 
     El criterio es permisivo: se acepta cualquier problema real que pueda
-    tener una ciudad (infraestructura, servicios, seguridad, limpieza,
-    alumbrado, tránsito, medio ambiente, reclamos de obra, etc.).
+    tener una ciudad.
     Solo se rechaza si es inequívocamente SPAM, publicidad sin relación con
     el municipio, o caracteres sin sentido (gibberish).
 
@@ -55,15 +54,13 @@ def verificar_comentario_ia(comentario):
     (True, "") para no bloquear reclamos legítimos.
     """
     prompt = f"""
-Eres un moderador permisivo de reclamos de la Municipalidad de la Ciudad de
-La Rioja. Solo marcás como SPAM un mensaje que sea CLARAMENTE publicidad,
-venta de productos, enlaces promocionales o caracteres sin sentido (gibberish).
+Eres un moderador permisivo de reclamos de la Municipalidad de la Ciudad.
+Solo marcás como SPAM un mensaje que sean 
+CLARAMENTE enlaces promocionales o caracteres sin sentido (gibberish).
 
 Todo lo demás se considera VALIDO, aunque el problema esté mal redactado,
 falten signos de puntuación o la categoría no se entienda bien. Aceptá
-cualquier problema real de una ciudad: infraestructura, servicios básicos,
-seguridad, limpieza, alumbrado, tránsito, transporte, medio ambiente,
-salud, animales sueltos, reclamos de obras, ruido, etc.
+cualquier problema real de una ciudad.
 
 Comentario del ciudadano:
 "{comentario}"
