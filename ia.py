@@ -44,23 +44,38 @@ Incluye asunto, saludo, cuerpo y despedida.
 def verificar_comentario_ia(comentario):
     """Analiza si un comentario de reclamo es válido o es spam/sin sentido.
 
+    El criterio es permisivo: se acepta cualquier problema real que pueda
+    tener una ciudad (infraestructura, servicios, seguridad, limpieza,
+    alumbrado, tránsito, medio ambiente, reclamos de obra, etc.).
+    Solo se rechaza si es inequívocamente SPAM, publicidad sin relación con
+    el municipio, o caracteres sin sentido (gibberish).
+
     Devuelve (es_valido, motivo) donde es_valido es un bool y motivo un texto
     explicativo. Ante cualquier error (por ejemplo, sin Ollama) devuelve
     (True, "") para no bloquear reclamos legítimos.
     """
     prompt = f"""
-Eres un moderador de reclamos de la Municipalidad de la Ciudad de La Rioja.
-Tu tarea es decidir si el siguiente comentario de un ciudadano describe un
-problema municipal válido o si se trata de SPAM, publicidad, caracteres sin
-sentido (gibberish) o mensajes incoherentes.
+Eres un moderador permisivo de reclamos de la Municipalidad de la Ciudad de
+La Rioja. Solo marcás como SPAM un mensaje que sea CLARAMENTE publicidad,
+venta de productos, enlaces promocionales o caracteres sin sentido (gibberish).
+
+Todo lo demás se considera VALIDO, aunque el problema esté mal redactado,
+falten signos de puntuación o la categoría no se entienda bien. Aceptá
+cualquier problema real de una ciudad: infraestructura, servicios básicos,
+seguridad, limpieza, alumbrado, tránsito, transporte, medio ambiente,
+salud, animales sueltos, reclamos de obras, ruido, etc.
 
 Comentario del ciudadano:
 "{comentario}"
 
-Respondí SOLO con "VALIDO" o "SPAM". No agregues ninguna otra palabra.
+¿Es SPAM inequívoco o caracteres sin sentido? Respondé SOLO con "VALIDO" o
+"SPAM". Cuando tengas dudas, respondé "VALIDO". No agregues ninguna otra
+palabra.
 """
     try:
         respuesta = consultar_ia(prompt).strip().upper()
+        if "NO ES SPAM" in respuesta or "NO SPAM" in respuesta or "NO ES UN SPAM" in respuesta:
+            return True, ""
         if "VALIDO" in respuesta:
             return True, ""
         if "SPAM" in respuesta:
