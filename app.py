@@ -447,6 +447,158 @@ def pagina_nuevo_reclamo():
     footer()
 
 
+def _fecha_formateada(fecha):
+    """Convierte 'YYYY-MM-DD HH:MM:SS' a '12 de Julio de 2026 | 20:45 hs'."""
+    try:
+        dt = datetime.strptime(str(fecha), "%Y-%m-%d %H:%M:%S")
+    except (ValueError, TypeError):
+        return fecha or ""
+    meses = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+    ]
+    return f"{dt.day} de {meses[dt.month - 1]} de {dt.year} | {dt.strftime('%H:%M')} hs"
+
+
+def _etiqueta_prioridad_html(prioridad):
+    color = COLOR_PRIORIDAD.get(prioridad, "#94a3b8")
+    return f'<span class="badge badge-pri" style="background:{color};">{prioridad}</span>'
+
+
+def _etiqueta_categoria_html(categoria):
+    color = COLOR_CATEGORIA.get(categoria, "#94a3b8")
+    return (
+        f'<span class="badge badge-cat" style="background:{color};color:#fff;'
+        f'border-color:transparent;">{categoria}</span>'
+    )
+
+
+def _formulario_editar(registro):
+    st.markdown("#### Editar reclamo")
+    nuevo_comentario = st.text_area(
+        "Comentario", value=registro[1], key="edit_com", height=110
+    )
+    col_a, col_b = st.columns(2)
+    with col_a:
+        nueva_categoria = st.selectbox(
+            "Categoría",
+            CATEGORIAS,
+            index=CATEGORIAS.index(registro[2]) if registro[2] in CATEGORIAS else 0,
+            key="edit_cat",
+        )
+    with col_b:
+        nueva_prioridad = st.selectbox(
+            "Prioridad",
+            PRIORIDADES,
+            index=PRIORIDADES.index(registro[3]) if registro[3] in PRIORIDADES else 0,
+            key="edit_pri",
+        )
+    col_x, col_y = st.columns(2)
+    with col_x:
+        nueva_calle = st.text_input("Calle", value=registro[4] or "", key="edit_calle")
+    with col_y:
+        nuevo_numero = st.text_input("Número", value=registro[5] or "", key="edit_num")
+
+    if st.button("Guardar cambios", key="btn_editar", type="primary"):
+        ok, motivo = validaciones.validar_comentario(nuevo_comentario)
+        if not ok:
+            st.warning(motivo)
+            return
+        ok, motivo = validaciones.validar_calle(nueva_calle)
+        if not ok:
+            st.warning(motivo)
+            return
+        ok, motivo = validaciones.validar_numero(nuevo_numero)
+        if not ok:
+            st.warning(motivo)
+            return
+        base_datos.actualizar_reclamo(
+            int(registro[0]),
+            nuevo_comentario.strip(),
+            nueva_categoria,
+            nueva_prioridad,
+            nueva_calle.strip(),
+            nuevo_numero.strip(),
+        )
+        st.success("Reclamo actualizado correctamente.")
+
+
+@st.dialog("Eliminar reclamo", width="small")
+def _dialogo_eliminar(id_reclamo, etiqueta):
+    st.markdown(f"¿Seguro que querés eliminar el reclamo **{etiqueta}** y todas sus fotos?")
+    st.caption("Esta acción no se puede deshacer.")
+    col_ok, col_cancel = st.columns(2)
+    with col_ok:
+        if st.button("Sí, eliminar", type="primary", key="conf_eliminar"):
+            storage_imagenes.eliminar_fotos_reclamo(int(id_reclamo))
+            base_datos.eliminar_reclamo(int(id_reclamo))
+            st.session_state.pop("historial_seleccion", None)
+            st.rerun()
+    with col_cancel:
+        if st.button("Cancelar", key="cancelar_eliminar"):
+            st.rerun()
+
+
+def _detalle_reclamo(ids, etiquetas):
+    st.markdown("## Detalle del reclamo")
+    st.caption("Seleccioná un reclamo de la lista para ver su ficha completa.")
+    id_seleccion = st.selectbox(
+        "Reclamo",
+        ids,
+        key="historial_seleccion",
+        format_func=lambda i: etiquetas[i],
+    )
+    if id_seleccion is None:
+        return
+
+    registro = base_datos.obtener_reclamo_por_id(int(id_seleccion))
+    if not registro:
+        st.warning("Ese reclamo ya no existe. Se actualizó la lista.")
+        return
+
+    id_reclamo, comentario, categoria, prioridad, calle, numero, fecha = registro
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+                {_etiqueta_prioridad_html(prioridad)}
+                {_etiqueta_categoria_html(categoria)}
+                <span class="muted" style="margin-left:auto;">🗓️ {_fecha_formateada(fecha)}</span>
+            </div>
+            <div style="margin-top:0.8rem;font-size:1.05rem;">{comentario}</div>
+            <div class="muted" style="margin-top:0.6rem;">
+                📍 {calle or "—"} {numero or ""} · La Rioja, Argentina
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("### Fotos")
+    nombres_fotos = base_datos.obtener_imagenes_reclamo(int(id_reclamo))
+    if nombres_fotos:
+        columnas = st.columns(min(len(nombres_fotos), 3))
+        for i, nombre in enumerate(nombres_fotos):
+            ruta = storage_imagenes.ruta_archivo(int(id_reclamo), nombre)
+            with columnas[i % 3]:
+                st.image(ruta, width="stretch")
+    else:
+        st.info("Este reclamo no tiene fotos adjuntas.")
+
+    st.markdown("### Ubicación (aproximada)")
+    if calle or numero:
+        mostrar_mapa(calle or "", numero or "", altura=320)
+    else:
+        st.info("Este reclamo no tiene dirección cargada.")
+
+    _formulario_editar(registro)
+
+    st.markdown("### Eliminar reclamo")
+    if st.button("Eliminar reclamo", key="btn_eliminar"):
+        _dialogo_eliminar(int(id_reclamo), etiquetas.get(int(id_reclamo), f"#{id_reclamo}"))
+
+
 def pagina_historial():
     encabezado("Historial de reclamos", "Consulta, analiza y gestiona los reclamos registrados")
 
@@ -474,94 +626,30 @@ def pagina_historial():
 
     df = df.sort_values("ID", ascending=False).reset_index(drop=True)
 
-    st.dataframe(df, width="stretch", hide_index=True)
+    st.markdown("## Lista de reclamos")
+    df_tabla = df.copy()
+    df_tabla["Comentario"] = df_tabla["Comentario"].apply(
+        lambda c: c if len(c) <= 50 else c[:50] + "…"
+    )
+    df_tabla = df_tabla[["ID", "Comentario", "Categoría", "Prioridad", "Calle", "Fecha"]]
 
-    st.markdown("## Fotos del reclamo")
-    st.caption("Imágenes subidas en el reclamo seleccionado.")
+    def _color_prioridad(val):
+        color = COLOR_PRIORIDAD.get(val, "#94a3b8")
+        return f"color: #fff; background-color: {color}; font-weight: 700; text-align: center;"
+
+    def _color_categoria(val):
+        color = COLOR_CATEGORIA.get(val, "#94a3b8")
+        return f"color: #fff; background-color: {color}; text-align: center;"
+
+    df_estilizado = df_tabla.style.map(_color_prioridad, subset=["Prioridad"]).map(
+        _color_categoria, subset=["Categoría"]
+    )
+    st.dataframe(df_estilizado, width="stretch", hide_index=True)
+
     ids = [int(i) for i in df["ID"]]
     etiquetas = {fila["ID"]: etiqueta_reclamo(fila) for _, fila in df.iterrows()}
-    id_fotos = st.selectbox(
-        "Seleccionar reclamo para ver fotos",
-        ids,
-        key="fotos_reclamo",
-        format_func=lambda i: etiquetas[i],
-    )
-    nombres_fotos = base_datos.obtener_imagenes_reclamo(int(id_fotos))
-    if nombres_fotos:
-        columnas = st.columns(min(len(nombres_fotos), 3))
-        for i, nombre in enumerate(nombres_fotos):
-            ruta = storage_imagenes.ruta_archivo(int(id_fotos), nombre)
-            with columnas[i % 3]:
-                st.image(ruta, width="stretch")
-    else:
-        st.info("Este reclamo no tiene fotos adjuntas.")
 
-    st.markdown("## Ubicación (aproximada)")
-    st.caption("Mapa del lugar indicado en el reclamo seleccionado.")
-    registro_ubic = base_datos.obtener_reclamo_por_id(int(id_fotos))
-    if registro_ubic and (registro_ubic[4] or registro_ubic[5]):
-        mostrar_mapa(registro_ubic[4] or "", registro_ubic[5] or "", altura=360)
-    else:
-        st.info("Este reclamo no tiene dirección cargada.")
-
-    st.markdown("## Editar reclamo")
-    id_editar = st.selectbox(
-        "Seleccionar reclamo",
-        ids,
-        key="editar_id",
-        format_func=lambda i: etiquetas[i],
-    )
-    registro = base_datos.obtener_reclamo_por_id(int(id_editar))
-    if registro:
-        nuevo_comentario = st.text_input("Comentario", value=registro[1], key="edit_com")
-        nueva_categoria = st.selectbox(
-            "Categoría",
-            CATEGORIAS,
-            index=CATEGORIAS.index(registro[2]) if registro[2] in CATEGORIAS else 0,
-            key="edit_cat",
-        )
-        nueva_prioridad = st.selectbox(
-            "Prioridad",
-            PRIORIDADES,
-            index=PRIORIDADES.index(registro[3]) if registro[3] in PRIORIDADES else 0,
-            key="edit_pri",
-        )
-        nueva_calle = st.text_input("Calle", value=registro[4] or "", key="edit_calle")
-        nuevo_numero = st.text_input("Número", value=registro[5] or "", key="edit_num")
-        if st.button("Guardar cambios", key="btn_editar"):
-            ok, motivo = validaciones.validar_comentario(nuevo_comentario)
-            if not ok:
-                st.warning(motivo)
-                return
-            ok, motivo = validaciones.validar_calle(nueva_calle)
-            if not ok:
-                st.warning(motivo)
-                return
-            ok, motivo = validaciones.validar_numero(nuevo_numero)
-            if not ok:
-                st.warning(motivo)
-                return
-            base_datos.actualizar_reclamo(
-                int(id_editar),
-                nuevo_comentario.strip(),
-                nueva_categoria,
-                nueva_prioridad,
-                nueva_calle.strip(),
-                nuevo_numero.strip(),
-            )
-            st.success("Reclamo actualizado correctamente.")
-
-    st.markdown("## Eliminar reclamo")
-    id_eliminar = st.selectbox(
-        "Seleccionar reclamo a eliminar",
-        ids,
-        key="borrar_id",
-        format_func=lambda i: etiquetas[i],
-    )
-    if st.button("Eliminar reclamo", type="primary", key="btn_eliminar"):
-        storage_imagenes.eliminar_fotos_reclamo(int(id_eliminar))
-        base_datos.eliminar_reclamo(int(id_eliminar))
-        st.success(f"Reclamo #{id_eliminar} eliminado (junto con sus fotos).")
+    _detalle_reclamo(ids, etiquetas)
     footer()
 
 
