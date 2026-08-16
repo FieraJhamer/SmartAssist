@@ -1,3 +1,4 @@
+"""Integración con Ollama (IA local)."""
 import ollama
 
 MODELO = "gemma3:1b"

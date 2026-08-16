@@ -1,8 +1,9 @@
+"""Capa de persistencia SQLite (CRUD) de SmartAssist."""
 import sqlite3
 import os
 from datetime import datetime
 
-RUTA_BASE_DATOS = os.path.join(os.path.dirname(__file__), "datos", "reclamos.db")
+from smartassist.config import RUTA_BASE_DATOS
 
 
 def conectar():
@@ -109,10 +110,6 @@ def mostrar_historial():
 
 def guardar_reclamo(comentario, categoria, prioridad):
     insertar_reclamo(comentario, categoria, prioridad)
-
-
-def crear_base():
-    crear_tabla()
 
 
 def obtener_reclamo_por_id(id):
@@ -239,7 +236,3 @@ def obtener_usuarios():
     registros = cursor.fetchall()
     conexion.close()
     return registros
-
-
-if __name__ == "__main__":
-    crear_tabla()

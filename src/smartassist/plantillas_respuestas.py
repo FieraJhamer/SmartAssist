@@ -1,3 +1,5 @@
+"""Respuestas automáticas por categoría de reclamo."""
+
 RESPUESTAS = {
     "AGUA_CLOACAS": "Su reclamo sobre el servicio de agua está siendo derivado a la Secretaría de Obras y Servicios. Una cuadrilla se comunicará para coordinar la revisión.",
     "RECOLECCION_RESIDUOS": "Registramos su pedido sobre recolección de residuos y lo derivamos a la Secretaría de Ambiente. La zona será atendida lo antes posible.",
@@ -13,8 +15,3 @@ RESPUESTAS = {
 
 def generar_respuesta(categoria):
     return RESPUESTAS.get(categoria, RESPUESTAS["OTRO"])
-
-
-if __name__ == "__main__":
-    for cat in RESPUESTAS:
-        print(f"{cat}: {generar_respuesta(cat)}")

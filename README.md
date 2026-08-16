@@ -128,26 +128,46 @@ python menu_principal.py
 
 ```
 SmartAssist/
-├── app.py                    # Interfaz web Streamlit (punto de entrada principal)
-├── menu_principal.py         # Menú interactivo de consola
-├── clasificador.py           # Wrapper de clasificación + tests de ejemplo
-├── motor_clasificacion.py    # Motor de clasificación por palabras clave
-├── plantillas_respuestas.py  # Respuestas automáticas por categoría
-├── base_datos.py             # Capa de persistencia SQLite (CRUD)
-├── storage_imagenes.py       # Almacenamiento y validación de fotos de reclamos
-├── autenticacion.py          # Autenticación de administradores (login)
-├── validaciones.py           # Validación de datos de entrada (web y CLI)
-├── ia.py                     # Integración con Ollama (IA local)
-├── pandas_analisis.py        # Estadísticas con Pandas
-├── cliente_api.py            # Cliente HTTP para API externa (no integrado)
-├── assets/                   # Imágenes y recursos (logo de La Rioja, favicon)
-├── docs/                     # Documentación de diseño y especificación
-├── markdowns/                # Material de las clases del curso
-├── datos/                    # Base de datos SQLite (se crea sola, no se versiona)
-├── storage/                  # Fotos subidas por los usuarios (no se versionan)
-├── requirements.txt          # Dependencias de Python
+├── app.py                        # Interfaz web Streamlit (punto de entrada principal)
+├── menu_principal.py             # Menú interactivo de consola
+├── src/smartassist/              # Paquete principal de la aplicación
+│   ├── config.py                 # Configuración central (rutas, categorías, prioridades, .env)
+│   ├── base_datos.py             # Capa de persistencia SQLite (CRUD)
+│   ├── motor_clasificacion.py    # Motor de clasificación por palabras clave
+│   ├── clasificador.py           # Wrapper de clasificación
+│   ├── plantillas_respuestas.py  # Respuestas automáticas por categoría
+│   ├── validaciones.py           # Validación de datos de entrada
+│   ├── storage_imagenes.py       # Almacenamiento y validación de fotos
+│   ├── autenticacion.py          # Login de administradores (bcrypt + token de sesión)
+│   ├── ia.py                     # Integración con Ollama (IA local)
+│   ├── pandas_analisis.py        # Estadísticas y DataFrames con Pandas
+│   ├── cliente_api.py            # Cliente HTTP para API externa (no integrado)
+│   └── ui/                       # Interfaz web (Streamlit)
+│       ├── estilos.py            # CSS de la marca y helpers visuales
+│       ├── mapa.py               # Vista previa de ubicación en Google Maps
+│       ├── sesion.py             # Gestión de sesión del administrador
+│       ├── nuevo_reclamo.py      # Sección: Nueva reclamo
+│       ├── historial.py          # Sección: Historial
+│       ├── estadisticas.py       # Sección: Estadísticas
+│       ├── analisis_ia.py        # Sección: Análisis Inteligente
+│       └── administradores.py    # Sección: Administradores
+├── scripts/
+│   └── cargar_ejemplos.py        # Carga reclamos de ejemplo en la base
+├── tests/
+│   ├── conftest.py               # Configura pytest (agrega src/ al path)
+│   └── test_clasificacion.py     # Pruebas de la clasificación
+├── assets/                       # Imágenes y recursos (logo de La Rioja, favicon)
+├── docs/                         # Documentación de diseño y especificación
+├── markdowns/                    # Material de las clases del curso
+├── datos/                        # Base de datos SQLite (se crea sola, no se versiona)
+├── storage/                      # Fotos subidas por los usuarios (no se versionan)
+├── requirements.txt              # Dependencias de Python
 └── README.md
 ```
+
+> **Estructura de paquete (`src/`):** la aplicación vive en el paquete `smartassist`.
+> `app.py` y `menu_principal.py` agregan `src/` al `sys.path` al inicio, por lo que
+> se ejecutan igual que antes sin necesidad de instalar el paquete.
 
 ---
 
@@ -155,7 +175,9 @@ SmartAssist/
 
 ### `app.py`
 
-Interfaz web con Streamlit. Configura `layout="wide"`, inyecta el CSS de la marca (paleta La Rioja, Montserrat + Plus Jakarta Sans) y organiza la navegación en el sidebar con el logo del municipio.
+Orquestador web con Streamlit. Configura `layout="wide"`, inyecta el CSS de la marca (paleta La Rioja, Montserrat + Plus Jakarta Sans), organiza la navegación en el sidebar con el logo del municipio y delega la renderización de cada sección en los módulos de `smartassist/ui`.
+
+### `ui/mapa.py`
 
 - `url_mapa_reclamo(calle, numero)` → URL del embed de Google Maps para la dirección del reclamo (aproximada, sin API key).
 - `mostrar_mapa(calle, numero, altura)` → renderiza el mapa dentro de un marco con `st.iframe`.
@@ -170,7 +192,7 @@ Normaliza el texto (minúsculas y sin acentos) y aplica reglas de palabras clave
 
 - `clasificar_comentario(comentario)` → `(categoria, prioridad)`
 
-Ejecución directa: `python clasificador.py` — corre 8 tests de ejemplo.
+Las pruebas de ejemplo viven ahora en `tests/test_clasificacion.py` (pytest).
 
 > **Asignación final de prioridad:** en el alta web la prioridad por reglas se combina con una **segunda opinión de la IA** (`sugerir_prioridad_ia` + `combinar_prioridades`). Se toma siempre el nivel de mayor severidad (ALTA > MEDIA > BAJA), de modo que la IA puede escalar reclamos que las reglas no detectan bien. La CLI por ahora usa solo las reglas.
 
@@ -235,10 +257,6 @@ Almacena las fotos de los reclamos en `storage/fotos/{id_reclamo}/` (archivos) y
 - `sugerir_prioridad_ia(comentario)` → `(prioridad|None, detalle)` — segunda opinión de prioridad con IA.
 - `combinar_prioridades(prioridad_reglas, prioridad_ia)` → `(prioridad, origen)` — combina reglas e IA tomando la de mayor severidad.
 
-### `pandas_analisis.py`
-
-Lee la base de datos y muestra las estadísticas con Pandas.
-
 ### `autenticacion.py`
 
 Backend de login con contraseñas hasheadas:
@@ -250,9 +268,16 @@ Backend de login con contraseñas hasheadas:
 - `usuario_existe(usuario)` → `bool` — indica si el usuario ya está registrado.
 - `crear_usuario(usuario, clave)` — crea un usuario nuevo con su contraseña hasheada.
 
-Usa `python-dotenv` para cargar `.env` (si existe) al importar, dando prioridad a las variables de entorno del sistema. Los usuarios se guardan en la tabla `usuarios` de `datos/reclamos.db` con la clave **hasheada con bcrypt** (nunca en texto plano). Define las constantes globales `SESSION_HORAS` (duración en horas de la sesión, por defecto 8) y `SESION_SECRETO` (secreto para firmar el token de sesión).
+Usa `python-dotenv` para cargar `.env` (si existe) al importar (vía `config.py`), dando prioridad a las variables de entorno del sistema. Los usuarios se guardan en la tabla `usuarios` de `datos/reclamos.db` con la clave **hasheada con bcrypt** (nunca en texto plano). Define las constantes globales `SESSION_HORAS` (duración en horas de la sesión, por defecto 8) y `SESION_SECRETO` (secreto para firmar el token de sesión).
 
-La **persistencia de sesión** en la web se maneja en `app.py` mediante `st.query_params`: al loguear se genera un **token firmado** (`crear_token_sesion`) y se guarda en la URL; al recargar se valida (`verificar_token_sesion`) y se restaura la sesión. Si el token expiró o no es válido, se pide login de nuevo.
+La **persistencia de sesión** en la web se maneja en `ui/sesion.py` mediante `st.query_params`: al loguear se genera un **token firmado** (`crear_token_sesion`) y se guarda en la URL; al recargar se valida (`verificar_token_sesion`) y se restaura la sesión. Si el token expiró o no es válido, se pide login de nuevo.
+
+### `pandas_analisis.py`
+
+Lee la base de datos y construye análisis con Pandas:
+
+- `dataframe_reclamos()` → `DataFrame` con todos los reclamos y la fecha tipada.
+- `estadisticas_a_texto()` → resumen de categorías y prioridades, usado para alimentar a la IA.
 
 ### `cliente_api.py`
 
@@ -269,8 +294,8 @@ La base `datos/reclamos.db` se **crea automáticamente** al ejecutar la app (pri
 ## 🧪 Verificación rápida
 
 ```bash
-python clasificador.py   # ejecuta 8 tests de clasificación
-python -m py_compile app.py ia.py base_datos.py  # chequea sintaxis
+python -m pytest                  # ejecuta las pruebas de clasificación
+python -m py_compile app.py        # chequea sintaxis del punto de entrada
 ```
 
 ---

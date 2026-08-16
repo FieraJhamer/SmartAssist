@@ -1,6 +1,14 @@
-import base_datos
-import clasificador
+"""Carga reclamos de ejemplo en la base de datos.
 
+Uso desde la raíz del proyecto:
+    python scripts/cargar_ejemplos.py
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
+from smartassist import base_datos, clasificador
 
 EJEMPLOS = [
     ("No hay agua en mi barrio desde hace dos días", "Av. Ortiz de Ocampo", "1250"),

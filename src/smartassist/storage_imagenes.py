@@ -1,10 +1,11 @@
+"""Almacenamiento y validación de fotos de reclamos."""
 import os
 import shutil
 from datetime import datetime
 
-import base_datos
+from smartassist import base_datos
+from smartassist.config import RUTA_STORAGE
 
-RUTA_STORAGE = os.path.join(os.path.dirname(__file__), "storage", "fotos")
 FORMATOS_PERMITIDOS = {"png", "jpg", "jpeg", "gif", "webp"}
 TAMANIO_MAXIMO_MB = 15
 TAMANIO_MAXIMO_BYTES = TAMANIO_MAXIMO_MB * 1024 * 1024

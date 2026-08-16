@@ -1,20 +1,11 @@
+"""Validación de datos de entrada (comentario, dirección, categoría, prioridad)."""
 import re
+
+from smartassist.config import CATEGORIAS, PRIORIDADES
 
 MAX_LONGITUD_COMENTARIO = 500
 MAX_LONGITUD_CALLE = 80
 MAX_LONGITUD_NUMERO = 10
-
-CATEGORIAS = [
-    "AGUA_CLOACAS",
-    "RECOLECCION_RESIDUOS",
-    "ALUMBRADO",
-    "SEGURIDAD",
-    "MANTENIMIENTO_VIAL",
-    "TRANSPORTE_PUBLICO",
-    "LIMPIEZA",
-    "CONSULTA",
-]
-PRIORIDADES = ["ALTA", "MEDIA", "BAJA"]
 
 _PATRON_CALLE = re.compile(
     r"^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ\s.,'\"-]{2,80}$"

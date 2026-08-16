@@ -1,3 +1,4 @@
+"""Cliente HTTP para una API externa (no integrado en el flujo principal)."""
 import urllib.request
 import urllib.parse
 import json
@@ -16,8 +17,3 @@ def analizar_comentario_con_api(comentario):
     except Exception as e:
         print(f"[cliente_api] Error al conectar con la API: {e}")
         return None, None
-
-
-if __name__ == "__main__":
-    cat, pri = analizar_comentario_con_api("prueba")
-    print(f"Resultado API: {cat} / {pri}")

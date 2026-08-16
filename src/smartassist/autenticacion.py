@@ -1,3 +1,4 @@
+"""Autenticación de administradores: login, hashing y token de sesión."""
 import base64
 import hashlib
 import hmac
@@ -6,11 +7,9 @@ import os
 import time
 
 import bcrypt
-from dotenv import load_dotenv
 
-import base_datos
-
-load_dotenv()
+from smartassist import base_datos
+from smartassist import config  # noqa: F401  (índice: garantiza la carga de .env)
 
 ADMIN_USUARIO = os.environ.get("SMARTASSIST_ADMIN_USUARIO", "admin")
 ADMIN_CLAVE = os.environ.get("SMARTASSIST_ADMIN_CLAVE", "admin123")

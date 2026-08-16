@@ -1,8 +1,11 @@
-import base_datos
-import clasificador
-import plantillas_respuestas
-import validaciones
+"""SmartAssist — Menú interactivo de consola (CLI)."""
+import os
+import sys
 from datetime import datetime
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+
+from smartassist import base_datos, clasificador, plantillas_respuestas, validaciones
 
 
 def mostrar_historial():
