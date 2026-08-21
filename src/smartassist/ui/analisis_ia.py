@@ -81,6 +81,10 @@ def pagina():
     _inicializar_chat()
     _mostrar_chat()
 
+    # Genera la respuesta pendiente ANTES del formulario para que el spinner
+    # y la burbuja del asistente aparezcan por encima del input.
+    _generar_respuesta_pendiente(estadisticas)
+
     # Formulario dentro del contenedor principal (no fijo al pie como chat_input)
     with st.form("ia_chat_form", clear_on_submit=True):
         col_input, col_btn = st.columns([6, 1])
@@ -97,7 +101,5 @@ def pagina():
     if enviado and consulta.strip():
         _enviar_consulta(consulta)
         st.rerun()
-
-    _generar_respuesta_pendiente(estadisticas)
 
     footer()
