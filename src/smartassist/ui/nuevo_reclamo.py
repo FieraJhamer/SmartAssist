@@ -61,11 +61,6 @@ def pagina():
             st.warning(motivo)
             return
         numero = numero.strip()
-        with st.spinner("Verificando que el reclamo sea válido…"):
-            es_valido, motivo = ia.verificar_comentario_ia(comentario)
-        if not es_valido:
-            st.error(f"Reclamo no registrado: {motivo}")
-            return
         categoria, prioridad_reglas = clasificador.clasificar_comentario(comentario)
         with st.spinner("Consultando a la IA por la prioridad…"):
             prioridad_ia, detalle_ia = ia.sugerir_prioridad_ia(comentario)
